@@ -201,3 +201,48 @@ test("simulateDecision: isSimulatedDemo is always true — never presented as an
   const result = simulateDecision(input, requirements);
   assert.equal(result.isSimulatedDemo, true);
 });
+
+// -----------------------------------------------------------------------------
+// Fallback — Decision Simulation must keep working if the agent is unavailable
+// -----------------------------------------------------------------------------
+test("simulateDecision: falls back to a valid, non-crashing zero-impact result if the agent throws", () => {
+  const requirements = getRequirements();
+  const input: DecisionInput = {
+    titleAr: "زيادة عدد الحافلات المكوكية خلال أوقات الذروة",
+    category: "service_change",
+    descriptionAr: "زيادة الحافلات لتقليل وقت الانتظار وتحسين تدفق الحركة.",
+    magnitudePercent: 15,
+    affectedAreaAr: "نقاط انتظار الحافلات",
+  };
+
+  const throwingAgent = () => {
+    throw new Error("simulated agent failure");
+  };
+
+  const result = simulateDecision(input, requirements, throwingAgent);
+
+  assert.equal(result.affectedRequirements.length, 0);
+  assert.equal(result.predictedOverallScore, result.currentOverallScore);
+  assert.equal(result.isSimulatedDemo, true);
+  assert.ok(result.explanationAr.length > 0);
+  assert.ok(Array.isArray(result.alternatives) && result.alternatives.length > 0);
+});
+
+test("simulateDecision: falls back the same way if the agent returns a malformed (non-array) result", () => {
+  const requirements = getRequirements();
+  const input: DecisionInput = {
+    titleAr: "قرار اختبار",
+    category: "operational_change",
+    descriptionAr: "وصف اختبار",
+    magnitudePercent: -10,
+    affectedAreaAr: "منطقة اختبار",
+  };
+
+  // Deliberately malformed (non-array) return, to exercise the fallback's shape guard.
+  const malformedAgent = (() => null) as unknown as Parameters<typeof simulateDecision>[2];
+
+  const result = simulateDecision(input, requirements, malformedAgent);
+
+  assert.equal(result.affectedRequirements.length, 0);
+  assert.equal(result.predictedOverallScore, result.currentOverallScore);
+});

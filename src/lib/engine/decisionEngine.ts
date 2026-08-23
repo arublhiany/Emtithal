@@ -4,46 +4,28 @@
 // This MVP performs deterministic, rule-based "AI-Assisted Impact
 // Forecasting" (MASTER_SPEC §26) — NOT statistical prediction from
 // historical data, and NOT an official Ministry determination. Every number
-// here is reproducible from the rules below plus the company's current
-// requirement scores; nothing is invented at request time, and no LLM call
-// is involved (a plain deterministic keyword/topic match, documented below).
+// here is reproducible from the company's current requirement scores plus
+// the mappings handed to it; nothing is invented at request time.
 //
 // -----------------------------------------------------------------------------
-// Mapping model — content-aware, not category-flat
+// Layering: this file is the deterministic engine, not the interpreter
 // -----------------------------------------------------------------------------
-// A requirement is only linked to a decision when there is a defensible
-// reason: either its own topic vocabulary appears in the decision's text, or
-// the decision's category has a well-established (high-tier) relationship to
-// it. A decision category alone is a weak, generic prior — it is never
-// sufficient on its own to assert that a requirement will move, except for
-// each category's single strongest ("high-tier") link, which is still shown
-// only as an unconfirmed possibility, not counted toward the score.
+// Which requirements a decision plausibly relates to — and with what
+// confidence and source rule — is decided by the Decision Intelligence Agent
+// V1 (lib/agent/decisionAgent.ts), a separate interpretation/retrieval layer
+// that sits above this engine. This file never decides relevance itself: it
+// calls the agent, then does 100% of the numeric work (delta, predicted
+// score, risk level, alternatives, recommendation) from the agent's output.
+// The agent cannot compute or override a score — `sensitivity` is the only
+// number it hands down, and computeOverallScore (lib/engine/scoringEngine.ts)
+// remains the sole source of truth for compliance scoring, exactly as
+// before this layering was introduced.
 //
-// Two signals per (decision, requirement) pair:
-//
-//   1. CATEGORY_PRIOR — a 0-1 plausibility score for how strongly a decision
-//      *category* typically relates to a requirement. Deliberately modest:
-//      no category has more than one requirement at the "high tier" (>=0.7).
-//      DEMO CONFIGURATION — not an official regulatory weighting.
-//
-//   2. REQUIREMENT_KEYWORDS — a short list of Arabic topic-anchor terms per
-//      requirement, drawn directly from that requirement's own Purpose /
-//      Expected Evidence text in MVP_REQUIREMENTS.md (cited per requirement
-//      below). This is topic-matching against text already in the repo, not
-//      an invented regulation.
-//
-// Inclusion rule (documented, deterministic — see buildRequirementImpacts):
-//   - keyword match AND category prior > 0  -> included, High confidence, counted in score
-//   - keyword match, no/low category prior  -> included, Medium confidence, counted in score
-//   - category prior >= HIGH_TIER_PRIOR, no keyword match
-//                                            -> included, Low confidence, "uncertain",
-//                                               shown for transparency but NOT counted in score
-//   - otherwise                             -> not included at all
-//
-// This directly guards against a decision "randomly" moving a criterion it
-// has no defensible relationship to: the overall compliance score
-// (computeOverallScore) only ever incorporates requirements whose impact was
-// marked `includedInScore: true`.
+// Fallback: if the agent throws or returns something malformed, `interpret()`
+// below catches it and returns no mappings at all — the deterministic engine
+// then behaves exactly as it does for "no defensible relationship found"
+// (zero score movement, the existing empty-state explanation), so Decision
+// Simulation keeps working even if the interpretation layer is unavailable.
 // =============================================================================
 
 import type {
@@ -58,144 +40,9 @@ import type {
   RiskLevel,
 } from "@/lib/types";
 import { computeOverallScore } from "@/lib/engine/scoringEngine";
+import { interpretDecision, type DecisionAgentMapping } from "@/lib/agent/decisionAgent";
 
 const IMPACT_SCALE = 0.7; // demo dampening factor so a 20% operational change ≈ a moderate score shift
-const HIGH_TIER_PRIOR = 0.7; // minimum category-only prior that can surface an "uncertain" (uncounted) link
-const KEYWORD_ONLY_SENSITIVITY = 0.45; // sensitivity used when only content (no category prior) justifies inclusion
-
-const CATEGORY_LABEL_AR: Record<DecisionCategory, string> = {
-  staffing_change: "تغييرات في القوى العاملة",
-  service_change: "تغيير في الخدمة أو نقاط التقديم",
-  guest_experience_process: "عمليات تجربة الضيف",
-  evidence_process_change: "تغيير في عمليات التوثيق والأدلة",
-  operational_change: "تغيير تشغيلي عام",
-};
-
-/**
- * Category → requirement plausibility priors (DEMO CONFIGURATION).
- * Kept deliberately modest: these are *candidate* signals, not auto-include
- * weights. Only one requirement per category reaches the HIGH_TIER_PRIOR
- * threshold (its single most defensible, definitional link).
- */
-const CATEGORY_PRIOR: Record<DecisionCategory, Partial<Record<string, number>>> = {
-  staffing_change: {
-    // Fewer/more field staff most directly affects capacity to observe the
-    // journey (CR-004). Happiness Team (CR-005) and rights-awareness (CR-003)
-    // staffing are only weakly implied by a *generic* staffing change — they
-    // need explicit content match to be counted with real confidence.
-    "CR-004": 0.7,
-    "CR-005": 0.35,
-    "CR-003": 0.25,
-  },
-  service_change: {
-    "CR-001": 0.75,
-    "CR-004": 0.4,
-  },
-  guest_experience_process: {
-    "CR-001": 0.85,
-    "CR-002": 0.4,
-  },
-  evidence_process_change: {
-    // Documentation is one of all five requirements' evidence dimensions
-    // (MVP_REQUIREMENTS.md "Evidence Evaluation Model"), but CR-002 and
-    // CR-005 name documentation/reporting explicitly in their own Expected
-    // Evidence lists, so they carry the strongest, tied priors.
-    "CR-002": 0.6,
-    "CR-005": 0.6,
-    "CR-001": 0.3,
-  },
-  operational_change: {
-    // Deliberately the weakest, most generic category — nothing reaches the
-    // high tier, so a purely generic "operational change" with no matching
-    // content surfaces no requirement at all.
-    "CR-004": 0.55,
-    "CR-003": 0.35,
-    "CR-005": 0.3,
-  },
-};
-
-/**
- * Topic-anchor keywords per requirement, drawn from each requirement's own
- * Purpose / Expected Evidence text in MVP_REQUIREMENTS.md:
- *   CR-001 (lines 40-50)  — pilgrim-experience initiatives, service quality
- *   CR-002 (lines 74-84)  — modern concepts, training/awareness programs
- *   CR-003 (lines 108-118) — pilgrim-rights awareness activities
- *   CR-004 (lines 142-153) — field observation/monitoring of the journey
- *   CR-005 (lines 177-189) — Happiness Team rounds/interventions/cases
- * Plain substring matching against the decision's own text — a documented,
- * deterministic MVP interpretation layer, not a live model call.
- */
-const REQUIREMENT_KEYWORDS: Record<string, string[]> = {
-  "CR-001": [
-    "تجربة الضيف",
-    "تجربة ضيف الرحمن",
-    "راحة الضيف",
-    "رضا الضيف",
-    "مبادرة",
-    "مبادرات",
-    "وقت الانتظار",
-    "الانتظار",
-    "تدفق",
-    "ازدحام",
-    "جودة الخدمة",
-    "استراحة",
-    "إرشاد ميداني",
-    "نقطة استقبال",
-    "خدمة الضيف",
-    "توثيق المبادرة",
-    "توثيق الأنشطة",
-  ],
-  "CR-002": [
-    "تدريب",
-    "برنامج توعوي",
-    "برامج توعوية",
-    "توعية",
-    "المفاهيم الحديثة",
-    "ورشة",
-    "تأهيل",
-    "تطوير معرفي",
-    "ترسيخ معرفي",
-    "دورة تدريبية",
-    // CR-002's own Expected Evidence names "implementation documentation" —
-    // a documentation/process change decision legitimately touches it.
-    "توثيق",
-  ],
-  "CR-003": [
-    "حقوق ضيف الرحمن",
-    "حقوق الحجاج",
-    "حماية الحقوق",
-    "التوعية بالحقوق",
-    "شكاوى",
-    "إنصاف",
-    "كرامة الضيف",
-    "حقوق",
-  ],
-  "CR-004": [
-    "رصد التجربة",
-    "رصد الرحلة",
-    "رصد رحلة الضيف",
-    "مراقبة ميدانية",
-    "ملاحظات ميدانية",
-    "تحليل التجربة",
-    "متابعة ميدانية",
-    "تقرير رصد",
-    "رصد",
-  ],
-  "CR-005": [
-    "فريق السعادة",
-    "جولات ميدانية",
-    "جولات فريق السعادة",
-    "تدخلات ميدانية",
-    "حالات فريق السعادة",
-    "مستفيدين فريق السعادة",
-    "مبادرات فريق السعادة",
-    "فريق سعادة",
-    // CR-005's own name is literally "توثيق فعاليات ومبادرات فريق السعادة" —
-    // a documentation/process change decision legitimately touches it.
-    "توثيق فعاليات",
-    "التوثيق الدوري",
-  ],
-};
 
 function clampScore(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
@@ -209,91 +56,50 @@ function riskFromDelta(delta: number, predictedScore: number): RiskLevel {
   return "none";
 }
 
-function matchKeywords(haystack: string, keywords: string[]): string[] {
-  return keywords.filter((k) => haystack.includes(k));
-}
-
-interface RelevanceResult {
-  included: boolean;
-  includedInScore: boolean;
-  confidence: ConfidenceLevel;
-  sensitivity: number;
-  sourceRuleAr: string;
-}
-
-/** Deterministic relevance decision for one (decision, requirement) pair — see module header. */
-function assessRelevance(
-  requirementId: string,
-  categoryPrior: number,
-  matchedKeywords: string[],
-  categoryLabelAr: string
-): RelevanceResult {
-  const hasKeywordMatch = matchedKeywords.length > 0;
-  const sampleTerms = matchedKeywords.slice(0, 2).join("، ");
-
-  if (hasKeywordMatch && categoryPrior > 0) {
-    return {
-      included: true,
-      includedInScore: true,
-      confidence: "high",
-      sensitivity: categoryPrior,
-      sourceRuleAr: `تطابق نصي مباشر ("${sampleTerms}") مع فئة القرار "${categoryLabelAr}" التي ترتبط عادة بهذا المعيار.`,
-    };
+/**
+ * Calls the Decision Intelligence Agent to get requirement mappings, with a
+ * fallback: if the agent throws or returns a malformed result, this returns
+ * an empty mapping list rather than letting the failure propagate — Decision
+ * Simulation must keep working (as "no confident impact found") even if the
+ * interpretation layer is unavailable. `interpret` is injectable so tests can
+ * exercise this fallback path deterministically.
+ */
+function safeInterpret(
+  input: DecisionInput,
+  requirements: Requirement[],
+  interpret: typeof interpretDecision
+): DecisionAgentMapping[] {
+  try {
+    const mappings = interpret(input, requirements);
+    if (!Array.isArray(mappings)) throw new Error("Decision agent returned a non-array result");
+    return mappings;
+  } catch {
+    return [];
   }
-  if (hasKeywordMatch) {
-    return {
-      included: true,
-      includedInScore: true,
-      confidence: "medium",
-      sensitivity: KEYWORD_ONLY_SENSITIVITY,
-      sourceRuleAr: `تطابق نصي مباشر ("${sampleTerms}") مع مضمون القرار، رغم أن فئة القرار "${categoryLabelAr}" لا ترتبط عادة بهذا المعيار.`,
-    };
-  }
-  if (categoryPrior >= HIGH_TIER_PRIOR) {
-    return {
-      included: true,
-      includedInScore: false,
-      confidence: "low",
-      sensitivity: categoryPrior,
-      sourceRuleAr: `ارتباط عام محتمل بفئة القرار "${categoryLabelAr}" فقط، دون تطابق نصي مباشر في وصف القرار — غير مؤكد ولم يُحتسب ضمن النتيجة الإجمالية.`,
-    };
-  }
-  return {
-    included: false,
-    includedInScore: false,
-    confidence: "low",
-    sensitivity: 0,
-    sourceRuleAr: "",
-  };
 }
 
 function buildRequirementImpacts(
   input: DecisionInput,
   requirements: Requirement[],
-  magnitudeMultiplier: number
+  magnitudeMultiplier: number,
+  interpret: typeof interpretDecision
 ): RequirementImpact[] {
-  const decisionText = `${input.titleAr} ${input.descriptionAr} ${input.affectedAreaAr}`;
-  const categoryLabelAr = CATEGORY_LABEL_AR[input.category];
-  const priors = CATEGORY_PRIOR[input.category];
+  const mappings = safeInterpret(input, requirements, interpret);
+  const mappingByRequirementId = new Map(mappings.map((m) => [m.requirementId, m]));
 
   const impacts: RequirementImpact[] = [];
 
   for (const requirement of requirements) {
-    const categoryPrior = priors[requirement.id] ?? 0;
-    const matched = matchKeywords(decisionText, REQUIREMENT_KEYWORDS[requirement.id] ?? []);
-    const relevance = assessRelevance(requirement.id, categoryPrior, matched, categoryLabelAr);
-
-    if (!relevance.included) continue;
+    const mapping = mappingByRequirementId.get(requirement.id);
+    if (!mapping) continue;
 
     const rawDelta =
-      input.magnitudePercent * magnitudeMultiplier * relevance.sensitivity * IMPACT_SCALE;
+      input.magnitudePercent * magnitudeMultiplier * mapping.sensitivity * IMPACT_SCALE;
     const delta = Math.round(rawDelta);
-    const predictedScore = relevance.includedInScore
-      ? clampScore(requirement.score + delta)
-      : clampScore(requirement.score + delta); // shown as an illustrative estimate either way
+    const predictedScore = clampScore(requirement.score + delta);
     const actualDelta = predictedScore - requirement.score;
 
-    const direction: DecisionImpactDirection = !relevance.includedInScore
+    const direction: DecisionImpactDirection = !mapping.includedInScore
       ? "uncertain"
       : actualDelta > 0
         ? "positive"
@@ -301,11 +107,11 @@ function buildRequirementImpacts(
           ? "negative"
           : "uncertain";
 
-    const explanationAr = relevance.includedInScore
+    const explanationAr = mapping.includedInScore
       ? `القرار المقترح على "${input.affectedAreaAr}" يُتوقع أن يحدث ${
           direction === "positive" ? "تحسنًا" : direction === "negative" ? "تراجعًا" : "تأثيرًا محدودًا"
-        } في نتيجة معيار ${requirement.id} بمقدار ${Math.abs(actualDelta)} نقطة. ${relevance.sourceRuleAr}`
-      : `لا يوجد تطابق نصي مباشر بين وصف القرار ونطاق معيار ${requirement.id}. ${relevance.sourceRuleAr} الأثر التقديري المعروض (${actualDelta >= 0 ? "+" : ""}${actualDelta} نقطة) استرشادي فقط ولم يُحتسب ضمن النتيجة الإجمالية.`;
+        } في نتيجة معيار ${requirement.id} بمقدار ${Math.abs(actualDelta)} نقطة. ${mapping.sourceRuleAr}`
+      : `لا يوجد تطابق نصي مباشر بين وصف القرار ونطاق معيار ${requirement.id}. ${mapping.sourceRuleAr} الأثر التقديري المعروض (${actualDelta >= 0 ? "+" : ""}${actualDelta} نقطة) استرشادي فقط ولم يُحتسب ضمن النتيجة الإجمالية.`;
 
     impacts.push({
       requirementId: requirement.id,
@@ -313,12 +119,12 @@ function buildRequirementImpacts(
       currentScore: requirement.score,
       predictedScore,
       delta: actualDelta,
-      riskLevel: relevance.includedInScore ? riskFromDelta(actualDelta, predictedScore) : "none",
+      riskLevel: mapping.includedInScore ? riskFromDelta(actualDelta, predictedScore) : "none",
       explanationAr,
       direction,
-      confidence: relevance.confidence,
-      sourceRuleAr: relevance.sourceRuleAr,
-      includedInScore: relevance.includedInScore,
+      confidence: mapping.confidence,
+      sourceRuleAr: mapping.sourceRuleAr,
+      includedInScore: mapping.includedInScore,
     });
   }
 
@@ -345,15 +151,16 @@ function overallFromImpacts(
 function buildAlternatives(
   input: DecisionInput,
   requirements: Requirement[],
-  currentOverallScore: number
+  currentOverallScore: number,
+  interpret: typeof interpretDecision
 ): DecisionAlternative[] {
-  const asProposedImpacts = buildRequirementImpacts(input, requirements, 1);
+  const asProposedImpacts = buildRequirementImpacts(input, requirements, 1, interpret);
   const asProposedScore = overallFromImpacts(requirements, asProposedImpacts);
 
-  const phasedImpacts = buildRequirementImpacts(input, requirements, 0.5);
+  const phasedImpacts = buildRequirementImpacts(input, requirements, 0.5, interpret);
   const phasedScore = overallFromImpacts(requirements, phasedImpacts);
 
-  const mitigatedImpacts = buildRequirementImpacts(input, requirements, 0.25);
+  const mitigatedImpacts = buildRequirementImpacts(input, requirements, 0.25, interpret);
   const mitigatedScore = overallFromImpacts(requirements, mitigatedImpacts);
 
   const mitigationLabelAr: Record<DecisionCategory, string> = {
@@ -492,18 +299,25 @@ function computeSimulationConfidence(
   };
 }
 
+/**
+ * @param interpret Which Decision Intelligence Agent to consult for
+ *   requirement mappings. Defaults to the real agent (lib/agent/decisionAgent.ts);
+ *   overridable in tests to exercise the fallback path when the agent is
+ *   unavailable or throws (see safeInterpret above).
+ */
 export function simulateDecision(
   input: DecisionInput,
-  requirements: Requirement[]
+  requirements: Requirement[],
+  interpret: typeof interpretDecision = interpretDecision
 ): DecisionSimulationResult {
   const { overallScore: currentOverallScore } = computeOverallScore(
     requirements.map((r) => ({ id: r.id, weight: r.weight, score: r.score }))
   );
 
-  const affectedRequirements = buildRequirementImpacts(input, requirements, 1);
+  const affectedRequirements = buildRequirementImpacts(input, requirements, 1, interpret);
   const countedImpacts = affectedRequirements.filter((i) => i.includedInScore);
   const predictedOverallScore = overallFromImpacts(requirements, affectedRequirements);
-  const alternatives = buildAlternatives(input, requirements, currentOverallScore);
+  const alternatives = buildAlternatives(input, requirements, currentOverallScore, interpret);
   const recommended = alternatives.find((a) => a.isRecommended)!;
 
   const riskLevel = overallRisk(affectedRequirements);
