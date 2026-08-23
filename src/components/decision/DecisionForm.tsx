@@ -47,6 +47,14 @@ export function DecisionForm({
     setAffectedAreaAr(p.affectedAreaAr);
   }
 
+  function selectCustom() {
+    setPresetId("custom");
+    setTitleAr("");
+    setDescriptionAr("");
+    setMagnitudePercent(0);
+    setAffectedAreaAr("");
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     onSimulate({ titleAr, category, descriptionAr, magnitudePercent, affectedAreaAr });
@@ -106,6 +114,22 @@ export function DecisionForm({
               <span className="text-xs text-[var(--color-ink)]">{p.titleAr}</span>
             </label>
           ))}
+          <label
+            className={`flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer transition-colors ${
+              presetId === "custom"
+                ? "border-[var(--color-primary)] bg-[var(--color-primary-tint)]"
+                : "border-[var(--color-border)] hover:bg-[var(--color-bg)]"
+            }`}
+          >
+            <input
+              type="radio"
+              name="preset"
+              checked={presetId === "custom"}
+              onChange={selectCustom}
+              className="mt-1"
+            />
+            <span className="text-xs text-[var(--color-ink)]">قرار مخصص</span>
+          </label>
         </div>
       </div>
 
