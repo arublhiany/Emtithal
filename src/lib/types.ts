@@ -241,6 +241,8 @@ export interface DecisionInput {
   affectedAreaAr: string; // e.g. service point / process name
 }
 
+export type DecisionImpactDirection = "positive" | "negative" | "uncertain";
+
 export interface RequirementImpact {
   requirementId: string;
   requirementNameAr: string;
@@ -249,6 +251,19 @@ export interface RequirementImpact {
   delta: number;
   riskLevel: RiskLevel;
   explanationAr: string;
+  /** Direction of impact — "uncertain" when the mapping lacks strong-enough evidence to assert positive/negative. */
+  direction: DecisionImpactDirection;
+  /** How confident the mapping between this decision and this requirement is (MASTER_SPEC §27). */
+  confidence: ConfidenceLevel;
+  /** Which rule/signal justified including this requirement — shown for traceability/auditability. */
+  sourceRuleAr: string;
+  /**
+   * Whether this impact was counted toward `predictedOverallScore`. Low-confidence/"uncertain"
+   * impacts are shown for transparency but never move the deterministic overall score
+   * (see lib/engine/decisionEngine.ts — a decision can't be presumed to improve or worsen a
+   * requirement it has no defensible, content-backed relationship to).
+   */
+  includedInScore: boolean;
 }
 
 export interface DecisionAlternative {

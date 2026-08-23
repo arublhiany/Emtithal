@@ -56,7 +56,14 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
         />
         <div className="space-y-3">
           {result.affectedRequirements.map((r) => (
-            <div key={r.requirementId} className="rounded-lg border border-[var(--color-border)] p-3">
+            <div
+              key={r.requirementId}
+              className={`rounded-lg border p-3 ${
+                r.includedInScore
+                  ? "border-[var(--color-border)]"
+                  : "border-dashed border-[var(--color-border)] bg-[var(--color-bg)]"
+              }`}
+            >
               <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
                 <span className="text-sm font-medium text-[var(--color-ink)]">
                   {r.requirementId} — {r.requirementNameAr}
@@ -67,9 +74,9 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
                   </span>
                   <span
                     className={`font-semibold tabular-nums ${
-                      r.delta < 0
+                      r.direction === "negative"
                         ? "text-[var(--color-status-noncompliant)]"
-                        : r.delta > 0
+                        : r.direction === "positive"
                           ? "text-[var(--color-status-compliant)]"
                           : "text-[var(--color-ink-muted)]"
                     }`}
@@ -77,14 +84,28 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
                     ({r.delta > 0 ? "+" : ""}
                     {r.delta})
                   </span>
-                  <RiskBadge level={r.riskLevel} size="sm" />
+                  <ConfidenceBadge level={r.confidence} size="sm" />
+                  {r.includedInScore && <RiskBadge level={r.riskLevel} size="sm" />}
                 </span>
               </div>
               <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
                 {r.explanationAr}
               </p>
+              {!r.includedInScore && (
+                <p className="text-[11px] text-[var(--color-accent-dark)] mt-1.5 font-medium">
+                  أثر غير مؤكد — لم يُحتسب ضمن النتيجة الإجمالية.
+                </p>
+              )}
+              <p className="text-[11px] text-[var(--color-ink-faint)] mt-1.5">
+                المصدر: {r.sourceRuleAr}
+              </p>
             </div>
           ))}
+          {result.affectedRequirements.length === 0 && (
+            <p className="text-xs text-[var(--color-ink-muted)]">
+              لم يظهر أي ارتباط نصي أو تصنيفي مؤكد بين هذا القرار والمعايير الخمسة المعتمدة.
+            </p>
+          )}
         </div>
       </Card>
 
