@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type {
   ActionStatus,
-  ComplianceStatus,
+  LegacyComplianceStatus,
   ConfidenceLevel,
   RiskLevel,
 } from "@/lib/types";
@@ -51,7 +51,7 @@ export function StatusBadge({
   status,
   size,
 }: {
-  status: ComplianceStatus;
+  status: LegacyComplianceStatus;
   size?: "sm" | "md";
 }) {
   const tone = STATUS_TONE[status];

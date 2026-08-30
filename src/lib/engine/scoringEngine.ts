@@ -23,7 +23,7 @@
 // =============================================================================
 
 import type {
-  ComplianceStatus,
+  LegacyComplianceStatus,
   ConfidenceLevel,
   EvidenceDimensionAssessment,
   EvidenceValidationStatus,
@@ -63,7 +63,7 @@ function allDimensionsPending(dimensions: EvidenceDimensionAssessment[]): boolea
 export function computeComplianceStatus(
   score: number,
   dimensions: EvidenceDimensionAssessment[]
-): ComplianceStatus {
+): LegacyComplianceStatus {
   if (allDimensionsMissing(dimensions)) return "not_assessed";
   if (allDimensionsPending(dimensions)) return "needs_review";
   if (score >= COMPLIANT_THRESHOLD) return "compliant";

@@ -7,7 +7,7 @@
 import type {
   ActionPriority,
   ActionStatus,
-  ComplianceStatus,
+  LegacyComplianceStatus,
   ConfidenceLevel,
   EvidenceDimensionState,
   EvidenceValidationStatus,
@@ -15,7 +15,7 @@ import type {
   SupportTicketStatus,
 } from "@/lib/types";
 
-export const STATUS_LABEL: Record<ComplianceStatus, string> = {
+export const STATUS_LABEL: Record<LegacyComplianceStatus, string> = {
   compliant: "ملتزم",
   partially_compliant: "ملتزم جزئيًا",
   non_compliant: "غير ملتزم",
@@ -24,7 +24,7 @@ export const STATUS_LABEL: Record<ComplianceStatus, string> = {
 };
 
 export const STATUS_TONE: Record<
-  ComplianceStatus,
+  LegacyComplianceStatus,
   { fg: string; bg: string; dot: string }
 > = {
   compliant: {

@@ -69,6 +69,86 @@ Manual declaration ≠ Verified fact.
 
 ---
 
+## 3A. Official Sources and Verified Locators
+
+Verified issuing-authority sources for the Finalist implementation. These are
+the official documents — distinct from this matrix file, which is the
+implementation source of truth, not the issuing authority.
+
+### A) HAJ-EXP-01 … HAJ-EXP-05
+
+Official source:
+وزارة الحج والعمرة — "محددات البرنامج وأعمال مسار صناعة التجربة وتعزيز الثقة لموسم الحج 1447 هـ"
+
+Verified locator: pages 7–8 (3% track weight, 20% criterion weights, the
+criteria, and measurement / supporting-document details).
+
+### B) HAJ-NUSUK-01
+
+Official source:
+Official Nusuk Card FAQ — https://nusukcard.haj.gov.sa/ar-SA/faq
+
+### C) HAJ-CATERING-01, HAJ-CAMP-01, HAJ-PROVIDERS-01
+
+Official source:
+وزارة الحج والعمرة — "دليل التعليمات والإجراءات المنظمة لأداء شركات تقديم الخدمة لحجاج الخارج لموسم حج عام 1447هـ"
+
+Document page:
+https://haj.gov.sa/sitecore/content/HAJJ/Main/Home/Media-Center/Document-Library/Guide-to-Instructions-and-Procedures-Regulating-Performance-of-Service-Companies-Season-1447-AH/
+
+Official PDF:
+https://haj.gov.sa/s-core/-/media/Project/HAJJ/PDF-and-FILES/Document-Library/Guide-to-Instructions-and-Procedures-Regulating-Performance-of-Service-Companies-Season-1447-AH/AR-Guide-to-Instructions-and-Procedures-Regulating-Performance-of-Service-Companies-Season-1447-AH.pdf
+
+Verified locator: not yet established in our approved documents — retained as an
+unresolved locator note. The verified official document remains the official
+source.
+
+### D) CIV-01 … CIV-05
+
+Official source:
+الدفاع المدني — "تعليمات السلامة في الحج" —
+https://998.gov.sa/Ar/Page/SafetyInstInHajj/web/Safety/HajjSafetyInstruction/
+
+Supplementary current-season official source:
+https://998.gov.sa/ar/Page/News/2741/
+
+These safety instructions explicitly cover fire equipment, trained workers,
+emergency exits, unapproved electrical connections, and cooking restrictions.
+
+### E) MOH-01
+
+Official source:
+وزارة الصحة — Health Regulations —
+https://www.moh.gov.sa/CCC/healthp/regulations/Documents/HealthRegulations1.pdf
+
+Supported rule: the meningococcal vaccination requirement applies to Hajj/Umrah
+workers whose work requires direct contact with pilgrims / Umrah performers —
+NOT all company workers.
+
+Season continuity: UNRESOLVED. This source is not itself a 1447-specific
+company-worker notice. MOH-01 is not treated as fully season-verified regulatory
+truth until current-season continuity is verified.
+
+### Target Source for qualitative / field requirements
+
+A Target Source need not be a numeric regulator-published target.
+
+- **CIV-01 … CIV-05** — Target Source: the company operational profile → all
+  applicable camps/sites under the company's responsibility. Verification
+  target: each applicable site must satisfy the relevant official safety
+  condition. Actual Source: field inspection / verified checklist / official
+  inspection result. These are therefore NOT UNRESOLVED_REQUIREMENT for lack of
+  a numeric target.
+- **HAJ-PROVIDERS-01** — Target Source: the company operational profile → all
+  contracted service providers to whom the company's official supervision /
+  verification responsibility applies. Where the exact company responsibility for
+  a provider is unclear, that provider-level assessment stays PENDING /
+  INSUFFICIENT rather than assumed. HAJ-PROVIDERS-01 remains
+  UNRESOLVED_REQUIREMENT only for the unresolved company-vs-provider
+  responsibility mapping — not for a missing Target Source.
+
+---
+
 # 4. Ministry of Hajj and Umrah
 
 ## 4.1 Quality of Service Performance

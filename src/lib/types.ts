@@ -1,19 +1,29 @@
 // =============================================================================
-// EMTITHAL — Core domain types
-// Mirrors the entities defined in EMTITHAL_MASTER_SPEC.md §44 and the five
-// MVP criteria defined in MVP_REQUIREMENTS.md.
+// EMTITHAL — Core domain types (LEGACY MVP shapes)
 //
-// IMPORTANT: weights in this MVP are a DEMO CONFIGURATION (20% × 5 criteria),
-// not an official Ministry of Hajj and Umrah weighting model. See
-// `DEMO_WEIGHT_DISCLAIMER` in lib/data/requirements.ts.
+// These shapes still drive every current screen. Phase 1 introduces the
+// canonical Finalist model in `@/lib/model`; consumers migrate off these
+// legacy shapes in later phases via the adapters in `@/lib/legacy/compat`.
+//
+// IMPORTANT: weights in this legacy MVP are a DEMO CONFIGURATION (20% × 5
+// criteria), not an official Ministry weighting model.
 // =============================================================================
 
-export type ComplianceStatus =
+/**
+ * Legacy lowercase compliance vocabulary. The canonical Finalist statuses are
+ * the six uppercase values re-exported below as `ComplianceStatus` (matrix §3).
+ * Bridged by `LEGACY_TO_CANONICAL_STATUS` in `@/lib/legacy/compat`.
+ * @deprecated migrate to the canonical `ComplianceStatus` in the Phase 3 work.
+ */
+export type LegacyComplianceStatus =
   | "compliant" // ملتزم
   | "partially_compliant" // ملتزم جزئيًا
   | "non_compliant" // غير ملتزم
   | "needs_review" // يحتاج مراجعة
   | "not_assessed"; // غير مقيّم
+
+/** Canonical Finalist compliance statuses (matrix §3). */
+export type { ComplianceStatus } from "@/lib/model";
 
 export type RiskLevel = "critical" | "high" | "medium" | "low" | "none";
 
@@ -44,6 +54,13 @@ export type ActionStatus = "not_started" | "in_progress" | "completed"; // لم 
 
 export type ActionPriority = "critical" | "high" | "medium" | "low";
 
+/**
+ * Legacy multi-role company model. The Finalist canonical company-facing role
+ * is the single value `COMPANY_REPRESENTATIVE` (`CompanyUserRole` in
+ * `@/lib/model`). Kept only so the pre-Phase-10 landing page and demo store
+ * keep compiling; removed when Phase 10 rebuilds authentication.
+ * @deprecated use the canonical `CompanyUserRole`.
+ */
 export type CompanyRole =
   | "compliance_officer" // مسؤول الامتثال
   | "operations_manager" // مدير العمليات
@@ -98,7 +115,7 @@ export interface Requirement {
   // Computed / assessed fields (populated by the compliance engine from
   // company evidence — see lib/engine/scoringEngine.ts)
   score: number; // 0-100 achievement for this criterion
-  complianceStatus: ComplianceStatus;
+  complianceStatus: LegacyComplianceStatus;
   riskLevel: RiskLevel;
   evidenceStatus: EvidenceValidationStatus | "missing";
   lastEvaluation: string;
@@ -325,7 +342,7 @@ export interface MinistryCompanySummary {
   id: string;
   nameAr: string;
   overallScore: number;
-  status: ComplianceStatus;
+  status: LegacyComplianceStatus;
   riskLevel: RiskLevel;
   criticalGaps: number;
   pendingVerification: number;

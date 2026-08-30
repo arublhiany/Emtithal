@@ -216,12 +216,153 @@ Committed files: `package.json`, `.gitignore`, `.env.example`,
 No product behaviour change. No dependency installed. No UI, regulatory data,
 Figma, `AGENTS.md`, or `CLAUDE.md` touched.
 
+### Phase 1 — Data model + multi-authority regulatory matrix + adapters — IMPLEMENTATION COMPLETE (regulatory-source corrections applied), AWAITING APPROVAL
+Not committed. No dependency installed. `AGENTS.md` / `CLAUDE.md` untouched.
+
+New (canonical model): `src/lib/model/{compliance,regulatory,verification,company,readiness,ai,index}.ts`.
+New (regulatory data, transcribed from `REGULATORY_MATRIX_v1.md` §5–§7 + §3A):
+`src/lib/data/regulatory/{authorities,hajjExperience,hajjOperational,health,civilDefense,officialSources,notes,index}.ts`
+— 3 authorities, **15 requirements** (5 Hajj Experience + 4 Hajj Operational + 1
+Ministry of Health + 5 Civil Defense), canonical matrix IDs, `officialWeight`
+non-null only for HAJ-EXP-01…05 (`{ trackWeightPercent: 3, withinTrackWeightPercent: 20 }`).
+
+**Verified official sources populated (matrix §3A).** Every one of the 15 records
+now carries a structured `officialSource { authorityId, reference, urls[],
+locatorNote }`, distinct from `matrixSourceRef` (which only traces to our
+implementation matrix). `getRequirementsMissingOfficialSource()` → `[]`.
+3 records lack a precise page/section locator (the Service-Companies Guide has no
+established page number) — `HAJ-CATERING-01`, `HAJ-CAMP-01`, `HAJ-PROVIDERS-01` —
+tracked via `getRequirementsMissingSourceLocator()` + an `unresolved[]` note; no
+page number invented.
+
+**Qualitative/field Target Source fixed (matrix §3A).** New `verificationTarget`
+field. `CIV-01…CIV-05` now have Target Source = company operational profile → all
+applicable camps/sites, verification target = each site satisfies the official
+safety condition — so they are **`SPECIFIED`**, no longer `UNRESOLVED_REQUIREMENT`.
+`HAJ-PROVIDERS-01` Target Source = company operational profile → contracted
+providers under the company's supervision/verification responsibility.
+
+**`UNRESOLVED_REQUIREMENT` = 2 records** (down from 6):
+- `HAJ-PROVIDERS-01` — unresolved company-vs-provider responsibility mapping
+  (matrix verification rule); NOT "missing Target Source".
+- `MOH-01` — current-season continuity to 1447H not verified (the MoH source is
+  not a 1447-specific company-worker notice).
+
+**`internalCriticality` assigned (INTERNAL prioritisation, not an official
+weight):** HAJ-EXP-01…05 = REQUIRED; HAJ-NUSUK-01 = REQUIRED; HAJ-CATERING-01 =
+REQUIRED; HAJ-CAMP-01 = CRITICAL; CIV-01/03/04/05 = CRITICAL; CIV-02 = REQUIRED;
+MOH-01 = null; HAJ-PROVIDERS-01 = null. Legacy `criticalGate` not carried
+(HAJ-EXP-03 = REQUIRED).
+
+**MOH-01 applicability** narrowed to the supported rule: workers whose work
+requires **direct contact** with pilgrims / Umrah performers — NOT all company
+workers.
+
+**Experience-track applicability** is `DECLARED_SCOPE` (`scopeKey:
+"MOHU_EXPERIENCE_TRACK"`) — the `ALWAYS_FOR_COMPANY` kind was removed from the
+model. Scope membership is declared by the company and evaluated in Phase 2.
+
+New (adapters): `src/lib/legacy/compat.ts` (legacy↔canonical status + ID resolution).
+New (i18n): `src/lib/i18n/glossary.ts` — the APPROVED Arabic glossary as data
+(imported by nothing; not rendered until Phase 10/11).
+New (store): `src/lib/store/persistence.ts` — versioned envelope (`SCHEMA_VERSION = 2`,
+key `emtithal-demo-state-v2`), guarded `deserialize` that rejects missing /
+unparseable / unversioned / wrong-version / wrong-shape payloads.
+New (tests): `src/lib/data/regulatory/__tests__/regulatoryMatrix.test.ts`,
+`src/lib/store/__tests__/persistence.test.ts`.
+Edited (minimum compat only): `src/lib/types.ts` (legacy `ComplianceStatus` →
+`LegacyComplianceStatus`; canonical `ComplianceStatus` re-exported from
+`@/lib/model`; `CompanyRole` marked `@deprecated`), `src/lib/labels.ts`,
+`src/components/ui/Badge.tsx`, `src/lib/engine/scoringEngine.ts` (type reference
+rename only — no runtime change), `src/lib/store/demoStore.tsx` (use
+`persistence.ts`).
+
+Changes to `REGULATORY_MATRIX_v1.md`: added **§3A "Official Sources and Verified
+Locators"** — the verified issuing-authority sources (groups A–E, exact strings /
+URLs), the MOH-01 season-continuity caveat, and the qualitative/field Target
+Source clarification for CIV-01…05 and HAJ-PROVIDERS-01. No existing matrix
+content changed.
+
+Not done (deferred by instruction): Phase 3 verification/readiness migration;
+wiring the canonical model into any screen; confidence-casing unification
+(`ConfidenceLevel` legacy lowercase left intact; canonical `AIConfidence` added
+for new code only); canonical-ID routing on `/company/compliance/[id]` (still
+legacy CR-00x end to end).
+
+---
+
+## Phase 1 approval-gated items
+
+### A — Arabic glossary — APPROVED (Phase 1)
+Approved by the product owner with label corrections. Recorded as data in
+`src/lib/i18n/glossary.ts`. NOT rendered anywhere yet (UI is Phase 10/11,
+Figma-gated). Existing labels `ملتزم` / `ملتزم جزئيًا` / `غير ملتزم` unchanged.
+
+| Concept | Approved Arabic label |
+| --- | --- |
+| Emtithal Readiness Index | مؤشر جاهزية امتثال |
+| Verification Coverage | نسبة التحقق |
+| PENDING_VERIFICATION | بانتظار التحقق |
+| INSUFFICIENT_DATA | بيانات غير كافية |
+| NOT_APPLICABLE | لا ينطبق |
+| UNRESOLVED_REQUIREMENT | متطلب قيد الاستكمال |
+| sub-requirement | متطلب فرعي |
+| Critical Blocker | عائق حرج |
+| data source: CONNECTED | متصل |
+| data source: NOT_CONNECTED | غير متصل |
+| data source: IMPORTED | بيانات مستوردة |
+| data source: PENDING_LINK | بانتظار الربط |
+
+### B — internalCriticality mapping — APPROVED (Phase 1), stored in code
+INTERNAL product prioritisation only (matrix §12) — **not an official regulatory
+weight**. Legacy `criticalGate` NOT carried (HAJ-EXP-03 = REQUIRED).
+`UNRESOLVED_REQUIREMENT` records carry **no** criticality (`null`).
+
+| Requirement | Class | Basis |
+| --- | --- | --- |
+| HAJ-EXP-01…05 | REQUIRED | Officially assessed Experience-Track criteria. |
+| HAJ-NUSUK-01 بطاقة نُسك | REQUIRED | Mandatory operational prerequisite. |
+| HAJ-CATERING-01 جاهزية وتغطية الإعاشة | REQUIRED | Service-coverage obligation. |
+| HAJ-CAMP-01 جاهزية المخيمات والمواقع | CRITICAL *(internal safety/welfare, not an official weight)* | Direct safety/welfare relevance. |
+| MOH-01 التحصين للعاملين | null | Until current-season applicability is resolved. |
+| HAJ-PROVIDERS-01 متابعة مقدمي الخدمات | null | Until responsibility ambiguity is resolved. |
+| CIV-01 وسائل وأنظمة الإطفاء | CRITICAL *(internal safety, not an official classification)* | Life-safety fire systems. |
+| CIV-02 عمالة مدربة على الإطفاء | REQUIRED | Supporting safety capability. |
+| CIV-03 مخارج الطوارئ | CRITICAL *(internal safety)* | Life-safety egress. |
+| CIV-04 توصيلات كهربائية غير معتمدة | CRITICAL *(internal safety)* | Fire-ignition risk. |
+| CIV-05 الطبخ داخل الخيام | CRITICAL *(internal safety)* | Fire-ignition risk. |
+
+### C — canonical DEMO_DATA fixture — APPROVED (Phase 1)
+Fictional; `DATA_SOURCE = DEMO_DATA`. Not created as a code file. Company profile +
+declared facts + data-source states only (assessment outcomes are Phase 3).
+Introduces NO regulatory fact absent from the matrix. Never shown as live
+government data. Entity names visibly marked as demo.
+
+- `companyId`: `demo-company-01`
+- `legalNameAr`: «(عرض تجريبي) شركة نموذج امتثال للحج والعمرة»
+- `season`: `1447H`
+- `pilgrimsCount`: 4200 — source «ملف تشغيلي — بيانات عرض»
+- `workforceCount`: 180
+- `servicesAr`: [النقل، الإعاشة، التخييم، الإرشاد]
+- `locationsAr`: [مكة المكرمة، مشعر منى، مشعر عرفات]
+- `camps`: [ {`demo-camp-mina`, «(عرض) مخيم تجريبي — منى», companyResponsible: true}, {`demo-camp-arafat`, «(عرض) مخيم تجريبي — عرفات», companyResponsible: true} ]
+- `serviceProviders`: [ {`demo-provider-transport-01`, «(عرض) مزوّد نقل تجريبي ١», النقل بين المشاعر, `SERVICE_PROVIDER`}, {`demo-provider-catering-01`, «(عرض) مزوّد إعاشة تجريبي ١», الإعاشة في منى, `SHARED`} ]
+- `declaredFacts`: { companyResponsibleForCamp: true, contractsExternalServiceProviders: true, providesOrEnsuresCatering: true }
+- `dataSources`:
+  - NUSUK «نُسك» — `NOT_CONNECTED` — source: null — «لا يوجد ربط مفعّل في النسخة الحالية»
+  - WORKERS «بيانات العاملين» — `IMPORTED` — «تقرير موارد بشرية مستورد — بيانات عرض» — «قبل ٥ أيام» — `PENDING_VERIFICATION`
+  - OPERATIONAL «البيانات التشغيلية» — `IMPORTED` — «ملف تشغيلي داخلي — بيانات عرض» — «قبل يومين» — `UNVERIFIED`
+  - EVIDENCE «الأدلة» — `IMPORTED` — «ملفات مرفوعة داخل امتثال — بيانات عرض» — «قبل يوم» — `PENDING_VERIFICATION`
+
+Assessment / verification outcomes are NOT part of this fixture — Phase 3 adds them.
+
 ---
 
 ## Outstanding approval gates
 
-- Phase 1 review gates: Arabic glossary; `internalCriticality` mapping;
-  canonical `DEMO_DATA` fixture.
+- Phase 1 review gates: Arabic glossary — APPROVED; `internalCriticality`
+  mapping — APPROVED (stored in code); canonical `DEMO_DATA` fixture —
+  APPROVED (not yet a code file; assessment outcomes deferred to Phase 3).
 - Phase 4 gate: install Anthropic SDK + Zod.
 - Phase 6 gate: install PDF + XLSX libraries after final compatibility review.
 - Phase 10 / Phase 11 gates: Figma frame inspection before visual work.

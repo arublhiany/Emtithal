@@ -16,11 +16,9 @@ import { createContext, useContext, useEffect, useMemo, useReducer } from "react
 import type { ReactNode } from "react";
 import type {
   ActionStatus,
-  AlertItem,
   CompanyRole,
   DecisionSimulationResult,
   Evidence,
-  ImprovementAction,
   SupportTicket,
   SupportTicketStatus,
 } from "@/lib/types";
@@ -29,21 +27,16 @@ import { getSeedActions } from "@/lib/data/actions";
 import { getSeedAlerts } from "@/lib/data/alerts";
 import { getSeedTickets } from "@/lib/data/tickets";
 import { DEMO_COMPANY_ID } from "@/lib/data/company";
+import {
+  type DemoState,
+  type SessionView,
+  LEGACY_STORAGE_KEYS,
+  STORAGE_KEY,
+  deserialize,
+  serialize,
+} from "@/lib/store/persistence";
 
-export type SessionView = "company" | "ministry" | null;
-
-interface DemoState {
-  view: SessionView;
-  companyRole: CompanyRole | null;
-  evidence: Evidence[];
-  actions: ImprovementAction[];
-  alerts: AlertItem[];
-  tickets: SupportTicket[];
-  decisionHistory: DecisionSimulationResult[];
-  selectedMinistryCompanyId: string;
-}
-
-const STORAGE_KEY = "emtithal-demo-state-v1";
+export type { DemoState, SessionView } from "@/lib/store/persistence";
 
 function initialState(): DemoState {
   return {
@@ -141,14 +134,17 @@ const DemoStoreContext = createContext<DemoStoreContextValue | null>(null);
 export function DemoStoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
 
-  // Hydrate from localStorage once, on mount, client-side only.
+  // Hydrate from localStorage once, on mount, client-side only. A missing,
+  // unparseable, wrong-version, or wrong-shape payload is rejected (never
+  // trusted blindly) and the seed state is kept.
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as DemoState;
-        dispatch({ type: "HYDRATE", state: parsed });
-      }
+      const { state: restored, rejected } = deserialize(
+        window.localStorage.getItem(STORAGE_KEY),
+        initialState(),
+      );
+      if (!rejected) dispatch({ type: "HYDRATE", state: restored });
+      for (const key of LEGACY_STORAGE_KEYS) window.localStorage.removeItem(key);
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_err) {
       // Corrupt or unavailable localStorage — continue with seed state.
@@ -157,7 +153,7 @@ export function DemoStoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      window.localStorage.setItem(STORAGE_KEY, serialize(state));
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_err) {
       // Storage unavailable (private mode, quota) — demo continues in-memory.
