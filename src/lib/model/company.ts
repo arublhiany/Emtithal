@@ -1,12 +1,16 @@
 // =============================================================================
-// Canonical organisation / company model — Finalist (Phase 1).
+// Canonical organisation / company model — Finalist (Phase 1 + Phase 2).
 //
 // Additive. The legacy company-role model (`CompanyRole` in `@/lib/types`) is
 // kept only so the pre-Phase-10 landing/store keep compiling; it is NOT the
 // canonical model. The canonical company-facing role is the single value
 // `COMPANY_REPRESENTATIVE` (locked decision, plan §B / FIGMA rules §9).
+//
+// Phase 2 adds the fields the deterministic Applicability Engine consumes.
+// Every declarable fact defaults to `null` / `[]` — never inferred.
 // =============================================================================
 
+import type { DataSource as DataOrigin } from "@/lib/mode";
 import type { ResponsibleParty, Season } from "./regulatory";
 import type { ValueVerification } from "./verification";
 
@@ -35,7 +39,27 @@ export interface CompanyDataSource {
   sourceAr: string | null;
   lastUpdatedAr: string | null;
   verification: ValueVerification | null;
+  /** DEMO_DATA vs REAL_DATA. Demo sources are never presented as live integrations. */
+  origin: DataOrigin;
 }
+
+/**
+ * A company-declared count with provenance. `count` is `null` until the company
+ * declares it — the Applicability / Target engines never default or invent it.
+ */
+export interface SourcedCount {
+  count: number | null;
+  sourceAr: string | null;
+  lastUpdatedAr: string | null;
+  verification: ValueVerification | null;
+}
+
+export const UNDECLARED_COUNT: SourcedCount = {
+  count: null,
+  sourceAr: null,
+  lastUpdatedAr: null,
+  verification: null,
+};
 
 export interface CompanyCamp {
   id: string;
@@ -52,13 +76,18 @@ export interface CompanyServiceProvider {
 }
 
 /**
- * Explicit company-declared facts consumed by the (Phase 2) Applicability
- * Engine. Every field is `null` until the company declares it; a `null` field
- * yields `INSUFFICIENT_DATA`, never an assumed value.
+ * Explicit company-declared facts consumed by the Applicability Engine. Every
+ * field is `null` until the company declares it; a `null` field yields
+ * `INSUFFICIENT_DATA`, never an assumed value.
  */
 export interface DeclaredCompanyFacts {
+  /** HAJ-EXP-01…05 (DECLARED_SCOPE: MOHU_EXPERIENCE_TRACK). */
+  experienceTrackScopeDeclared: boolean | null;
+  /** HAJ-CAMP-01 + CIV-01…05 (EXPRESSION: company_responsible_for_camp == true). */
   companyResponsibleForCamp: boolean | null;
+  /** HAJ-PROVIDERS-01 (NARRATIVE). Regulatory responsibility mapping stays UNRESOLVED. */
   contractsExternalServiceProviders: boolean | null;
+  /** HAJ-CATERING-01 (NARRATIVE). */
   providesOrEnsuresCatering: boolean | null;
 }
 
@@ -66,8 +95,23 @@ export interface CanonicalCompanyProfile {
   companyId: string;
   legalNameAr: string;
   season: Season;
-  pilgrimsCount: number | null;
-  workforceCount: number | null;
+
+  /** Total pilgrims served — declared, with provenance. */
+  pilgrims: SourcedCount;
+  /** Total workforce — declared, with provenance. */
+  workforce: SourcedCount;
+  /**
+   * Subset of workforce whose roles require direct contact with pilgrims /
+   * Umrah performers (MOH-01). NOT the whole workforce. `count: null` when not
+   * declared → MOH-01 applicability is INSUFFICIENT_DATA.
+   */
+  directContactWorkers: SourcedCount;
+  /**
+   * Explicit applicable-person roster/count for Nusuk (HAJ-NUSUK-01). `count:
+   * null` when not declared → HAJ-NUSUK-01 applicability is INSUFFICIENT_DATA.
+   */
+  nusukApplicablePersons: SourcedCount;
+
   servicesAr: string[];
   locationsAr: string[];
   camps: CompanyCamp[];

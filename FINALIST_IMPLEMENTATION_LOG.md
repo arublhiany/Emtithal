@@ -289,6 +289,35 @@ wiring the canonical model into any screen; confidence-casing unification
 for new code only); canonical-ID routing on `/company/compliance/[id]` (still
 legacy CR-00x end to end).
 
+### Phase 2 — Company profile + data sources + applicability engine — IMPLEMENTATION COMPLETE, AWAITING APPROVAL
+Not committed. No dependency installed. `AGENTS.md` / `CLAUDE.md` untouched. No UI change.
+
+New:
+- `src/lib/engine/applicabilityEngine.ts` — pure, deterministic. Per requirement
+  returns exactly one `APPLICABLE | NOT_APPLICABLE | INSUFFICIENT_DATA` plus
+  `reason`, `ruleEvaluated`, `companyFieldsUsed[]`, `regulatoryResolution`
+  (carried through unchanged), `regulatoryUnresolvedNote`, `targetPopulationBasis`
+  (declared-source description or `null` — never a manufactured number).
+  Selectors: `getApplicable/NotApplicable/InsufficientDataRequirementIds`,
+  `summariseApplicability`.
+- `src/lib/onboarding/companyProfile.ts` — `buildCompanyProfile(draft)` (no
+  inference; omitted → `null`/`[]`/undeclared count) + `getMissingApplicabilityInputs`.
+- `src/lib/data/demo/companyProfile.ts` — the approved DRAFT-C fixture as
+  `DEMO_COMPANY_PROFILE` (id `demo-company-01`, `DATA_SOURCE = DEMO_DATA`, no
+  assessment outcomes). Separate from the legacy `@/lib/data/company`.
+- Tests: `src/lib/engine/__tests__/applicabilityEngine.test.ts`,
+  `src/lib/onboarding/__tests__/companyProfile.test.ts`.
+
+Edited: `src/lib/model/company.ts` — added Phase-2 applicability fields to
+`CanonicalCompanyProfile` (`SourcedCount` for pilgrims / workforce /
+directContactWorkers / nusukApplicablePersons; `experienceTrackScopeDeclared`
+in `DeclaredCompanyFacts`; `origin: DEMO_DATA|REAL_DATA` on `CompanyDataSource`).
+Nothing consumed the canonical company shape before, so no runtime effect.
+
+Deferred by instruction: assessment / verification / compliance outcomes
+(Phase 3 owns them); the onboarding UI (Phase 10 — no screen exists yet, all
+capture fields are UI-pending).
+
 ---
 
 ## Phase 1 approval-gated items
