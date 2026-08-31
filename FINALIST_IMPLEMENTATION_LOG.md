@@ -1060,6 +1060,274 @@ returned. Recommendation-only failure → deterministic scenarios + diffs retain
 
 ---
 
+### Phase 8 — Research Knowledge Agent + approved research corpus — IMPLEMENTATION COMPLETE, CORPUS LOADED (official-web snapshot), AWAITING APPROVAL
+Not committed. `AGENTS.md` / `CLAUDE.md` untouched. No UI/Figma change. **No new
+dependency** — the Phase 6 PDF parser, `node:crypto`, and the existing `AIClient`
+are reused.
+
+**Corpus state: `CORPUS_LOADED`.** Provenance is no longer PDF-only. Two REAL
+official Umm Al-Qura University web pages are captured verbatim in a local,
+provenance-preserving snapshot (`research_sources/uqu_research_web_sources.md`),
+SHA-256 hashed locally and baked into the corpus. Because ≥1 real approved source
+now has verified local provenance **and** non-empty grounded passages, the
+production corpus is `CORPUS_LOADED`. The web is never fetched at runtime; the
+snapshot markdown is a capture container, **not** the publisher (canonical
+publisher stays UQU / the Institute).
+
+**The Nawwariyah PDF seed stays PENDING.** `SEED_RESEARCH_ENTRY`
+(`sourceKind: "PDF_REPORT"`) is unchanged: `publicationStatus: "INTERIM_REPORT"`,
+`sourceVerificationStatus: "PENDING_LOCAL_INGESTION"`, `officialUrl: null`,
+`documentHash: null`, `snapshotHash: null`, `ingestedAt: null`, `passages: []`.
+The `drive.uqu.edu.sa` PDF still fails TLS certificate validation — **never
+bypassed** (no `curl -k`), no substitute PDF invented. It remains a future PDF
+source; `isEntryLoaded(seed) === false`.
+
+**Source-kind / locator architecture (`src/lib/research/types.ts`).**
+`ResearchSourceKind = "PDF_REPORT" | "OFFICIAL_WEB_PAGE" | "OFFICIAL_STUDY_PAGE"`.
+`ResearchLocator = { type: "PDF_PAGE"; page: number; section: string | null } |
+{ type: "WEB_SECTION"; section: string }` — the single source of truth for a
+passage's origin. A `WEB_SECTION` passage has **no page field** and no invented
+page/section. `ResearchPassage` now carries `locator` + `extractionMethod:
+"PDF_TEXT" | "WEB_SNAPSHOT_TEXT"`. `ResearchSourceVerificationStatus` adds
+`OFFICIAL_WEB_SNAPSHOT_VERIFIED_LOCAL` (distinct from the PDF-download status so
+provenance is never ambiguous). `ResearchCorpusEntry` adds `sourceKind` +
+`snapshotHash` + `snapshotVerifiedAt`; `researchSeason` and `publicationYear`
+are now `string | null` ("when applicable" / no explicit publish date).
+`ingestedAt` is reserved for actual PDF ingestion; `snapshotVerifiedAt` is the
+distinct "verified locally in this repo" time for a web snapshot (never a UQU
+publication date, never a page last-modified date, never file mtime). Existing
+PDF ingestion (`ingestResearchPdf`) is unchanged except it emits
+`locator: { type: "PDF_PAGE", … }`. `publicationYear` is only ever an explicit
+literal or `null` — no runtime code derives it from a "last modified" date (a
+test asserts this).
+
+**The two real official UQU web sources (`src/lib/research/corpus.ts`):**
+- **SOURCE A** `UQU-HAJJ-INSTITUTE-SIMULATION-UNIT` — "وحدة النمذجة والمحاكاة",
+  publisher "معهد خادم الحرمين الشريفين لأبحاث الحج والعمرة — جامعة أم القرى",
+  `officialUrl: "https://uqu.edu.sa/hajj/70777"`, `sourceKind: "OFFICIAL_WEB_PAGE"`,
+  `publicationStatus: "OTHER_APPROVED"`, `researchSeason: null`,
+  **`publicationYear: null`** (the page shows only a 2019-05-21 *last modified*
+  date — not a publication year, so it is deliberately not stored), one
+  `WEB_SECTION` passage (section "main body / unit description") with the exact
+  snapshot excerpt.
+  Safe use: supports the general institutional role of modelling/simulation for
+  evaluating proposals/solutions, suggesting alternatives, deriving
+  indicators/readings, and supporting decision-making — it does **not** validate
+  any specific Emtithal scenario or numeric output.
+- **SOURCE B** `UQU-HAJJ-1447-BRT-SIMULATION-STUDY` — the BRT operational-efficiency
+  study/project page, publisher "جامعة أم القرى / معهد خادم الحرمين الشريفين
+  لأبحاث الحج والعمرة", `officialUrl: "https://uqu.edu.sa/App/News/178082"`,
+  `sourceKind: "OFFICIAL_STUDY_PAGE"`, `publicationStatus: "OTHER_APPROVED"`,
+  `researchSeason: "1447H"`, **`publicationYear: "2026"`** (the snapshot states
+  "Published by UQU: 2026-03-15"), two `WEB_SECTION` passages (section "article
+  body") with the exact snapshot excerpts. It is an **official study/project page, NOT a
+  final research report** — its limitations say so and it is never promoted to
+  `FINAL_REPORT`; an `OFFICIAL_STUDY_PAGE` also forces `needsHumanReview`. No study
+  results, sample sizes, or percentages are stored or invented.
+
+**Local web-snapshot verification (`src/lib/research/verifyWebSnapshot.ts`,
+server-only, browser-guarded).** `hashSnapshotBytes(bytes)` and
+`verifyWebSnapshot(rootDir)` re-hash `WEB_SNAPSHOT_SOURCE_FILE` and compare to
+`WEB_SNAPSHOT_SHA256`
+(`32dca19615c7b9d83418fa87e160de7e522b8025edd2d73ae98696c4f6a22ff2`).
+`WEB_SNAPSHOT_VERIFIED_AT` = `2026-08-31T16:47:51Z` — a real UTC timestamp
+captured once from the machine clock (`date -u +"%Y-%m-%dT%H:%M:%SZ"`), stored as
+each web source's `snapshotVerifiedAt` (their `ingestedAt` stays `null`). A test
+(`webSnapshot.test.ts`) recomputes the hash on disk and asserts the match,
+asserts `snapshotVerifiedAt` is a real `…Z` timestamp (not a placeholder
+midnight value), and that both web sources share the same `snapshotHash` +
+`snapshotVerifiedAt`.
+
+**Research authority (locked).** One approved publisher only —
+معهد خادم الحرمين الشريفين لأبحاث الحج والعمرة، جامعة أم القرى. Research is
+DECISION SUPPORT only: it can never create a regulatory requirement, change
+applicability / compliance status / readiness / Verification Coverage /
+blockers, create an official weight / penalty / integration, resolve an
+`UNRESOLVED_REQUIREMENT`, mark evidence VERIFIED, or be presented as Ministry
+regulation. Research findings and regulatory truth stay completely separate.
+
+**Seeded publication (`src/lib/research/corpus.ts` — `SEED_RESEARCH_ENTRY`):**
+- `titleAr` "تحسين كفاءة المرور بمحطة استقبال حافلات الحجاج والمعتمرين
+  بالنوارية باستخدام النمذجة والمحاكاة"
+- `publisherAr` "معهد خادم الحرمين الشريفين لأبحاث الحج والعمرة",
+  `institutionAr` "جامعة أم القرى"
+- `researchSeason` `1447H`, `publicationYear` `"2026"` (established separately as
+  bibliographic metadata — kept)
+- `publicationStatus` `INTERIM_REPORT` — **stored explicitly, never derived from
+  the title at runtime; there is no code path that promotes it to
+  `FINAL_REPORT`**
+- `theme` `OPERATIONAL_SIMULATION_AND_DECISION_SUPPORT`, curated `topicTags`
+- `sourceVerificationStatus` `PENDING_LOCAL_INGESTION`, `passages: []`,
+  `documentHash: null`, `snapshotHash: null`, `ingestedAt: null`,
+  `snapshotVerifiedAt: null`, `officialUrl: null` (to be set to the exact
+  uqu.edu.sa / drive.uqu.edu.sa locator on local ingestion)
+- `limitationsAr` includes "المصدر تقرير مرحلي، وتبقى النتائج أو التوصيات قابلة
+  للتحديث في التقرير النهائي." and "لا يمثل هذا المصدر متطلبًا تنظيميًا …"
+
+**Research corpus model (`src/lib/research/types.ts`).** `ResearchCorpusEntry`
+carries `researchId`, `titleAr`, `publisherAr`, `institutionAr`,
+`researchSeason` (`string | null`), `publicationYear` (`string | null`),
+explicit `publicationStatus`
+(`INTERIM_REPORT | FINAL_REPORT | EXECUTIVE_SUMMARY | OTHER_APPROVED`),
+`sourceKind`, `theme`, `topicTags`, `officialSourceReference`, `officialUrl`,
+`approvedSourceLocator`, `documentHash`, `snapshotHash`, `ingestedAt`,
+`snapshotVerifiedAt`, `sourceVerificationStatus`, `scopeAr`, `limitationsAr`,
+and `passages[]`
+(`ResearchPassage` = `passageId` + `locator` (`PDF_PAGE` real 1-based page /
+`WEB_SECTION` section, no page) + verbatim `textAr` + `extractionMethod:
+"PDF_TEXT" | "WEB_SNAPSHOT_TEXT"`), plus `sourceKind` + `snapshotHash`.
+
+**Ingestion (`ingestResearchPdf`).** Reuses the Phase 6 `parsePdf` (via
+`@/lib/evidence`, so `unpdf` stays imported by exactly one file) +
+`validateEvidenceFile`. Requires an official URL matching
+`OFFICIAL_RESEARCH_URL_PREFIXES` (`https://uqu.edu.sa/` / `https://drive.uqu.edu.sa/`
+— `opts.allowedUrlPrefixes` is a test-only seam), computes `sha256`
+(`node:crypto`), populates real `passages` with page provenance, sets
+`sourceVerificationStatus: "OFFICIAL_SOURCE_VERIFIED_LOCAL"` — and **carries
+`publicationStatus` through unchanged**. Failure codes: `UNSUPPORTED_FILE_TYPE` /
+`EMPTY_FILE` / `FILE_TOO_LARGE` / `PARSE_FAILED` / `NO_EXTRACTABLE_TEXT`. Emits
+`locator: { type: "PDF_PAGE", … }`. Tested against the synthetic Phase 6 Arabic
+PDF fixture + a clearly synthetic base entry (`TEST-RESEARCH-INGEST-FIXTURE`) and
+an `https://example.invalid/…` URL to prove the
+validate→parse→hash→page-provenance plumbing; **no real page, statistic,
+finding, or the real publication identity is used**. The PDF-report path is
+independent of the web-snapshot path; the Nawwariyah PDF seed stays pending.
+
+**Research-truth cleanup.** All **synthetic** loaded-corpus test fixtures use
+unmistakably synthetic content: `example.invalid` URLs, bracketed
+`[نص اختباري تركيبي]` placeholder passage text, and a `PLACEHOLDER_NUMBER`
+(`"12"`) explicitly labelled as *not a research finding* for the numeric-grounding
+tests. Synthetic `OFFICIAL_SOURCE_VERIFIED_LOCAL` corpora exist ONLY inside
+`*.test.ts`. The only production loaded entries are the two REAL UQU web sources,
+whose passage text is the byte-exact snapshot excerpt (a test asserts
+`snapshot.includes(passage.textAr)`) and contains **no digit at all** — no `20٪`
+/ waiting-time result / sample size / measured improvement / capacity finding /
+real page claim exists anywhere in the Phase 8 code, tests, or log.
+
+**Deterministic retrieval (`retrieval.ts`, NO LLM).** `retrieveResearch`
+short-circuits to `CORPUS_PENDING` only while **no** entry is locally
+ingested/snapshot-verified — with the two web sources loaded it now runs
+`matchResearch` over `corpus.filter(isEntryLoaded)` (the still-pending PDF seed is
+excluded). `matchResearch` resolves over `researchId`, verbatim canonical title,
+and `topicTags` / `scopeAr` token overlap: `MATCH` (one), `AMBIGUOUS` (≥2 — never
+a silent pick), `NO_RELEVANT_RESEARCH` (none — no manufactured study, no LLM).
+`restrictToResearchIds` narrows the pool.
+
+**Research Agent API (`src/lib/ai/agents/researchAgent.ts`, server-only):**
+- `answerResearchQuestion({ questionAr, restrictToResearchIds?, scenarioDiff? }, opts?)`
+- `getResearchInsightsForDecision({ scenarioDiff, questionAr? }, opts?)` — wraps
+  the above; the `ScenarioDiff` is **read-only** context, never mutated, and the
+  result has NO scenario/KPI/recommendation field.
+- `opts.client` injects an `AIClient`; `opts.corpus` overrides the corpus
+  (tests). Shared `AIClient`, `researchAgentAnswerSchema` (`.strict()`,
+  registered), shared guardrails, safe logging, one-retry maximum. The model
+  receives only the matched record's metadata + its real passages + provenance
+  (+ optional scenario diff) — never the open web.
+
+**Claim grounding.** `claimAr` = `SOURCE_DIRECT`; `relevanceAr` = a separate
+`AI_INTERPRETATION` (`provenanceKind: "SOURCE_DIRECT_PLUS_AI_INTERPRETATION"`) —
+the two are never merged. Every insight's `researchId` must be the matched
+candidate; `citedPassageIds` are filtered to real `passageId`s and an insight
+with **zero** real cited passages is dropped (recorded in `droppedInsights`).
+Canonical lineage — `sourceTitleAr`, `publisherAr`, `institutionAr`,
+`sourceKind`, `officialSourceReference`, `officialUrl`, `publicationStatus`,
+`researchSeason`, **`snapshotHash`**, `limitationsAr` — plus each cited passage's
+`locator` are **reattached by code from the corpus (`ResearchInsightView`), never
+from the model**. `snapshotHash` = `WEB_SNAPSHOT_SHA256` for both web sources,
+`null` for the pending PDF; it is **not** in the LLM response schema. A test
+proves that a model insight carrying any of `officialUrl` / `sourceTitleAr` /
+`publisherAr` / `sourceKind` / `publicationStatus` / `publicationYear` /
+`snapshotHash` / `locator` is rejected by the strict schema. For a `WEB_SECTION`
+source the surfaced provenance is the section label only — **no page number**,
+ever. The model returns claim / relevance / cited-passage-id text only.
+
+**Numeric-claim grounding.** Every numeric token in `claimAr` (percent /
+integer / decimal, Arabic-Indic digits folded) must appear verbatim in the
+concatenated text of that insight's cited passages; otherwise the whole insight
+is dropped (`UNGROUNDED_NUMERIC_CLAIM`). Gemini cannot invent a research
+statistic.
+
+**Regulation / research firewall.** `scanEvidenceProseForVerdict` (compliance
+verdicts, both directions) + new `scanResearchProseForRegulatoryClaim`
+("هذا متطلب رسمي", "وزارة الحج تشترط…", "الوزن الرسمي…", "الغرامة…",
+"official/regulatory requirement", "the ministry requires…") run on `summaryAr`
++ every `claimAr` / `relevanceAr`. A NEGATED disclaimer ("لا يمثل ذلك متطلبًا
+تنظيميًا", "does not constitute a … requirement") is allowed. Any real hit →
+the **whole research answer is discarded** (`failureCode: "GUARDRAIL_REJECTED"`,
+`insights: []`, `summaryAr: null`); the approved source + retrieval stay
+available. `ResearchAgentResult.containsRegulatoryClaim` is the literal `false`.
+The system prompt mandates "تشير الدراسة…" / "يقدم التقرير دعمًا بحثيًا لفكرة…" /
+"قد يكون ذا صلة عند تقييم…" / "لا يمثل ذلك متطلبًا تنظيميًا".
+
+**Interim-report / study-page guard.** A **provisional** source
+(`publicationStatus === "INTERIM_REPORT"` OR `sourceKind ===
+"OFFICIAL_STUDY_PAGE"` — e.g. the Nawwariyah PDF seed and the BRT study page)
+forces `needsHumanReview = true` on every surfaced insight and the top-level
+result, and keeps its limitations visible. Nothing is ever promoted to
+`FINAL_REPORT` (no schema field; lineage is code-reattached). SOURCE A
+(`OFFICIAL_WEB_PAGE`, `OTHER_APPROVED`, stable descriptive page) is not forced to
+review unless interpretation confidence is `LOW`.
+
+**Phase 7 integration separation.** "لماذا تغيرت النتيجة؟" stays Phase 7
+deterministic truth; "دعم بحثي" is a separate Phase 8 section. A test asserts
+`getResearchInsightsForDecision` neither reads back nor mutates the passed
+`ScenarioDiff` (JSON snapshot unchanged) and the result carries no
+`readiness` / `recommendedScenarioId` / `whyChangedAr`.
+
+**Failure model.** `AI_UNAVAILABLE` / `PROVIDER_ERROR` / `SCHEMA_VALIDATION_FAILED`
+(one retry) / `GUARDRAIL_REJECTED`, plus retrieval-level `CORPUS_PENDING` /
+`NO_RELEVANT_RESEARCH` / `AMBIGUOUS_RESEARCH` (all pre-LLM). On any failure the
+approved source + retrieval outcome stay reported, `insights: []`, nothing
+fabricated.
+
+**Files (new):** `src/lib/research/{types,corpus,retrieval,ingestResearch,verifyWebSnapshot,index}.ts`;
+`src/lib/research/__tests__/{corpus,retrieval,ingestResearch,webSnapshot}.test.ts`;
+`src/lib/ai/agents/researchAgent.ts`,
+`src/lib/ai/agents/__tests__/researchAgent.test.ts`;
+`src/lib/ai/scripts/liveResearchAgent.ts`;
+`research_sources/uqu_research_web_sources.md` (verified local official-web snapshot).
+**Files (changed):** `src/lib/ai/guardrails/sharedGuardrails.ts`
+(+`scanResearchProseForRegulatoryClaim`),
+`src/lib/ai/guardrails/__tests__/sharedGuardrails.test.ts`,
+`src/lib/ai/schemas/research.ts` (+`researchInsightSchema`,
+`researchAgentAnswerSchema`), `src/lib/ai/schemas/index.ts` (registry),
+`src/lib/ai/schemas/__tests__/schemas.test.ts`, `src/lib/ai/agents/index.ts`
+(exports), `src/lib/model/ai.ts` (Phase 8 types),
+`src/lib/ai/client/__tests__/serverOnly.test.ts` (research-layer containment +
+web-snapshot browser guard).
+Also added: `FINALIST_UI_UX_LOCK.md` (design contract for later UI phases — **no
+UI implemented**).
+
+**Provenance-correctness pass.** `publicationYear` → `string | null`; SOURCE A
+= `null` (a page "last modified 2019-05-21" is not a publication year — "2019"
+is not used anywhere), SOURCE B = `"2026"` (snapshot: "Published by UQU:
+2026-03-15"), seed = `"2026"` (kept). `WEB_SNAPSHOT_INGESTED_AT` (placeholder
+midnight) → `WEB_SNAPSHOT_VERIFIED_AT` = `2026-08-31T16:47:51Z` (real
+`date -u` output), stored as `snapshotVerifiedAt`; web `ingestedAt` = `null`
+(reserved for PDF). `snapshotHash` surfaced on `ResearchInsightView`,
+code-reattached from the corpus, absent from the LLM schema.
+
+**Checks:** `typecheck` ✓ · `lint` ✓ · `npm test` 403 pass / 0 fail (was 387,
++16) · `build` ✓. Not committed, not pushed. Phase 9 not started.
+
+**`LIVE_RESEARCH_AGENT_TEST = PASSED`** — one real Gemini call
+(`provider=gemini`, `model=gemini-3.6-flash`), retrieval restricted to SOURCE A
+(`UQU-HAJJ-INSTITUTE-SIMULATION-UNIT`): `corpusState=CORPUS_LOADED`,
+`retrieval=MATCH`, `sourceKind=OFFICIAL_WEB_PAGE`, locator
+`WEB_SECTION "main body / unit description"` (no page), `officialUrl`
+reconstructed by code = `https://uqu.edu.sa/hajj/70777`, Zod + guardrails pass,
+`containsRegulatoryClaim=false`, no invented statistic. No company data used.
+This live PASS **remains valid after the provenance-correctness pass** — the LLM
+output schema (`researchAgentAnswerSchema`), the provider path, and the system
+prompt are unchanged; only code-reattached provenance (`snapshotHash`), corpus
+metadata (`publicationYear`, `snapshotVerifiedAt`), and one null-safe label in
+`buildContext` (`سنة النشر: غير محددة` instead of a literal year for SOURCE A)
+changed, none of which alter the live AI contract. Gemini was **not** rerun.
+The Nawwariyah PDF stays `PENDING_LOCAL_INGESTION` — its only remaining blocker is
+secure local ingestion of the real official PDF over a valid TLS certificate.
+
+---
+
 ## Phase 1 approval-gated items
 
 ### A — Arabic glossary — APPROVED (Phase 1)

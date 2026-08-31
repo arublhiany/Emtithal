@@ -18,7 +18,7 @@ import {
   scenarioComparisonResultSchema,
   scenarioSchema,
 } from "./decision";
-import { researchQueryResultSchema } from "./research";
+import { researchAgentAnswerSchema, researchQueryResultSchema } from "./research";
 
 /** Named lookup for the canonical agent output schemas. */
 export const AI_OUTPUT_SCHEMAS = {
@@ -32,6 +32,7 @@ export const AI_OUTPUT_SCHEMAS = {
   scenario: scenarioSchema,
   scenarioComparisonResult: scenarioComparisonResultSchema,
   researchQueryResult: researchQueryResultSchema,
+  researchAgentAnswer: researchAgentAnswerSchema,
 } as const;
 
 export type AIOutputSchemaName = keyof typeof AI_OUTPUT_SCHEMAS;

@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import {
   SHARED_GUARDRAIL_SYSTEM_PROMPT,
   scanEvidenceProseForVerdict,
+  scanResearchProseForRegulatoryClaim,
   scanForForbiddenContent,
   scanTextForForbiddenContent,
   withSharedGuardrails,
@@ -173,6 +174,34 @@ test("evidence prose verdict scan: reports only the field path, never the text",
   ]);
   assert.equal(r.ok, false);
   assert.deepEqual(r.fields, ["mappings[0].appearsToSupportAr"]);
+});
+
+test("research prose regulatory-claim scan: an assertion of regulatory truth is flagged", () => {
+  const bad = [
+    "هذا متطلب رسمي",
+    "هذه متطلب تنظيمي",
+    "وزارة الحج تشترط تنفيذ هذا التحسين",
+    "الوزن الرسمي لهذا المعيار مرتفع",
+    "توجد غرامة مالية على عدم التطبيق",
+    "this is an official requirement",
+    "the ministry of hajj requires this",
+  ];
+  for (const t of bad) {
+    assert.equal(scanResearchProseForRegulatoryClaim([{ path: "claimAr", text: t }]).ok, false, t);
+  }
+});
+
+test("research prose regulatory-claim scan: a disclaimer that it is NOT a requirement is allowed", () => {
+  const ok = [
+    "تشير الدراسة إلى فائدة المحاكاة في تقييم البدائل.",
+    "يقدم التقرير دعمًا بحثيًا لفكرة تقييم البدائل قبل التنفيذ الميداني.",
+    "قد يكون هذا ذا صلة عند تقييم البدائل التشغيلية.",
+    "لا يمثل ذلك متطلبًا تنظيميًا ولا يغيّر أي نتيجة امتثال.",
+    "this does not constitute a regulatory requirement",
+  ];
+  for (const t of ok) {
+    assert.equal(scanResearchProseForRegulatoryClaim([{ path: "claimAr", text: t }]).ok, true, t);
+  }
 });
 
 test("withSharedGuardrails('json') wraps the agent prompt with the shared rules + a JSON-only instruction", () => {

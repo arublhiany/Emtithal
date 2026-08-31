@@ -294,3 +294,49 @@ export function scanEvidenceProseForVerdict(
   }
   return fields.length === 0 ? { ok: true, fields: [] } : { ok: false, fields };
 }
+
+// -----------------------------------------------------------------------------
+// Regulation / research firewall (Phase 8). Research prose is DECISION SUPPORT
+// only — it must never assert a regulatory obligation, an official weight, a
+// penalty, a government requirement, or a compliance verdict AS ITS OWN CLAIM.
+// A NEGATED disclaimer ("لا يمثل ذلك متطلبًا تنظيميًا", "this is not a
+// requirement") is allowed and does NOT count as a violation.
+// -----------------------------------------------------------------------------
+
+const REGULATORY_CLAIM_RX: RegExp[] = [
+  /(هذا|هذه|ذلك|تلك)\s+متطلب(\s+رسمي|\s+تنظيمي)?/, // "هذا متطلب رسمي/تنظيمي"
+  /(وزاره\s+الحج|الوزاره|الجهه\s+التنظيميه)\s+(تشترط|تفرض|تلزم|توجب|تطالب)/,
+  /(يجب|يلزم|يُشترط|يُفرض)\s+رسميًا/,
+  /(الوزن\s+الرسمي|وزن\s+رسمي|official\s+weight)/,
+  /(الغرامه|غرامه\s+ماليه|penalty|fine|sanction)/,
+  /(متطلب\s+رسمي|اشتراط\s+رسمي|official\s+requirement|regulatory\s+requirement)/,
+  /(the\s+ministry|ministry\s+of\s+hajj)\s+(requires|mandates|obliges|stipulates)/i,
+  /(this|it)\s+(is|constitutes|represents)\s+(an?\s+)?(official|regulatory)\s+requirement/i,
+];
+
+const REGULATORY_CLAIM_NEGATION_RX =
+  /(لا\s+يمثل|لا\s+يعد|لا\s+يُعد|ليس\s+متطلب|لا\s+يشكل|ليست\s+اشتراط|ليس\s+اشتراط|not\s+a\s+([a-z]+\s+)?requirement|does\s+not\s+(constitute|represent|imply|create)\s+a[n]?\s+([a-z]+\s+)?requirement|is\s+not\s+a[n]?\s+([a-z]+\s+)?requirement)/i;
+
+export interface RegulatoryClaimScan {
+  ok: boolean;
+  fields: string[];
+}
+
+/**
+ * Scans research prose for an assertion of regulatory truth. A field whose text
+ * only *denies* making such a claim is not flagged. Returns FIELD PATHS only.
+ */
+export function scanResearchProseForRegulatoryClaim(
+  entries: { path: string; text: string }[],
+): RegulatoryClaimScan {
+  const fields: string[] = [];
+  for (const { path, text } of entries) {
+    if (!text) continue;
+    const norm = normaliseVerdictText(text);
+    const asserts = REGULATORY_CLAIM_RX.some((rx) => rx.test(norm) || rx.test(text));
+    if (!asserts) continue;
+    const denies = REGULATORY_CLAIM_NEGATION_RX.test(norm) || REGULATORY_CLAIM_NEGATION_RX.test(text);
+    if (!denies) fields.push(path);
+  }
+  return fields.length === 0 ? { ok: true, fields: [] } : { ok: false, fields };
+}

@@ -222,3 +222,28 @@ export interface ResearchQueryResult {
   studies: ResearchStudy[];
   confidence: AIConfidence;
 }
+
+// --- Research Knowledge Agent — Phase 8 (decision support only) --------------
+//
+// NON-AUTHORITATIVE. The model returns claim / relevance / cited-passage text
+// only, against an APPROVED retrieved research record. It never reproduces
+// bibliographic metadata as truth, never creates a regulatory requirement /
+// weight / penalty / integration, never a compliance verdict, never resolves an
+// UNRESOLVED_REQUIREMENT. Research findings and regulatory truth stay separate.
+
+export interface ResearchInsight {
+  researchId: string;
+  /** SOURCE_DIRECT — what the approved source states, anchored to real passages. */
+  claimAr: string;
+  /** AI_INTERPRETATION — kept separate; not presented as the paper's own words. */
+  relevanceAr: string;
+  citedPassageIds: string[];
+  interpretationConfidence: AIConfidence;
+}
+
+export interface ResearchAgentAnswer {
+  summaryAr: string;
+  insights: ResearchInsight[];
+  noRelevantResearch: boolean;
+  needsHumanReview: boolean;
+}

@@ -38,6 +38,15 @@ export type {
   DecisionSimulationOutput,
   ScenarioProvenance,
 } from "./decisionAgent";
+export { answerResearchQuestion, getResearchInsightsForDecision } from "./researchAgent";
+export type {
+  AnswerResearchQuestionInput,
+  ResearchAgentOptions,
+  ResearchAgentResult,
+  ResearchAgentFailureCode,
+  ResearchInsightView,
+  ResearchCitedPassage,
+} from "./researchAgent";
 export { analyzeEvidence, mapEvidenceToRequirements } from "./evidenceAgent";
 export type {
   EvidenceAgentInput,

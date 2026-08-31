@@ -14,6 +14,7 @@ import type {
   EvidenceAgentOutput,
   RegulatoryAgentAnswer,
   RegulatoryAgentOutput,
+  ResearchAgentAnswer,
   ResearchQueryResult,
   Scenario,
   ScenarioComparisonResult,
@@ -27,6 +28,7 @@ import {
   evidenceAgentOutputSchema,
   regulatoryAgentAnswerSchema,
   regulatoryAgentOutputSchema,
+  researchAgentAnswerSchema,
   researchQueryResultSchema,
   scenarioComparisonResultSchema,
   scenarioSchema,
@@ -39,6 +41,7 @@ import type {
   EvidenceAgentOutputParsed,
   RegulatoryAgentAnswerParsed,
   RegulatoryAgentOutputParsed,
+  ResearchAgentAnswerParsed,
   ResearchQueryResultParsed,
   ScenarioComparisonResultParsed,
   ScenarioParsed,
@@ -55,10 +58,11 @@ const _din: DecisionInterpretation = {} as DecisionInterpretationParsed;
 const _drc: DecisionRecommendation = {} as DecisionRecommendationParsed;
 const _sce: Scenario = {} as ScenarioParsed;
 const _res: ResearchQueryResult = {} as ResearchQueryResultParsed;
+const _rag: ResearchAgentAnswer = {} as ResearchAgentAnswerParsed;
 // ScenarioComparisonResult minus the guardrail-forbidden `affectedStatuses`.
 const _cmp: Omit<ScenarioComparisonResult, "affectedStatuses"> =
   {} as ScenarioComparisonResultParsed;
-void [_reg, _rga, _evi, _eva, _dec, _din, _drc, _sce, _res, _cmp];
+void [_reg, _rga, _evi, _eva, _dec, _din, _drc, _sce, _res, _rag, _cmp];
 
 // -- runtime validity + strictness ----------------------------------------
 
@@ -303,6 +307,47 @@ test("researchQueryResultSchema: CORPUS_PENDING must have no studies", () => {
   );
 });
 
+test("researchAgentAnswerSchema (Phase 8): valid parses; strict; no bibliographic/regulatory fields", () => {
+  // shape-only fixture — placeholder text, asserts nothing about any real source
+  const valid = {
+    summaryAr: "[نص اختباري] دعم بحثي سياقي فقط",
+    insights: [
+      {
+        researchId: "TEST-RESEARCH-ID",
+        claimAr: "[نص اختباري] جملة تجريبية للتحقق من بنية المخطط.",
+        relevanceAr: "[نص اختباري] صياغة تجريبية للصلة.",
+        citedPassageIds: ["TEST-RESEARCH-ID#p1"],
+        interpretationConfidence: "MEDIUM" as const,
+      },
+    ],
+    noRelevantResearch: false,
+    needsHumanReview: true,
+  };
+  assert.equal(researchAgentAnswerSchema.safeParse(valid).success, true);
+  // lone-string citedPassageIds tolerated
+  assert.equal(
+    researchAgentAnswerSchema.safeParse({
+      ...valid,
+      insights: [{ ...valid.insights[0], citedPassageIds: "TEST-RESEARCH-ID#p1" }],
+    }).success,
+    true,
+  );
+  // the model may not supply any code-reattached canonical / provenance field
+  for (const bad of [
+    { publisherAr: "x" },
+    { publicationStatus: "FINAL_REPORT" },
+    { publicationYear: "2019" },
+    { snapshotHash: "0".repeat(64) },
+    { locator: { type: "PDF_PAGE", page: 3 } },
+    { officialUrl: "https://x" },
+    { sourceKind: "OFFICIAL_WEB_PAGE" },
+    { complianceStatus: "COMPLIANT" },
+    { officialWeight: 3 },
+  ]) {
+    assert.equal(researchAgentAnswerSchema.safeParse({ ...valid, ...bad }).success, false);
+  }
+});
+
 test("the schema registry exposes every canonical agent output schema", () => {
   assert.deepEqual(Object.keys(AI_OUTPUT_SCHEMAS).sort(), [
     "decisionInterpretation",
@@ -312,6 +357,7 @@ test("the schema registry exposes every canonical agent output schema", () => {
     "evidenceAgentOutput",
     "regulatoryAgentAnswer",
     "regulatoryAgentOutput",
+    "researchAgentAnswer",
     "researchQueryResult",
     "scenario",
     "scenarioComparisonResult",
