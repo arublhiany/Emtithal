@@ -41,6 +41,7 @@ import type {
 } from "@/lib/types";
 import { computeOverallScore } from "@/lib/engine/scoringEngine";
 import { interpretDecision, type DecisionAgentMapping } from "@/lib/agent/decisionAgent";
+import { displayRequirementId } from "@/lib/data/regulatory";
 
 // NOTE: `computeOverallScore` here is the LEGACY weighted baseline used only for
 // the decision-simulation before/after projection. It is NOT the Phase 3
@@ -112,11 +113,12 @@ function buildRequirementImpacts(
           ? "negative"
           : "uncertain";
 
+    const reqLabel = displayRequirementId(requirement.id);
     const explanationAr = mapping.includedInScore
-      ? `القرار المقترح على "${input.affectedAreaAr}" يُتوقع أن يحدث ${
-          direction === "positive" ? "تحسنًا" : direction === "negative" ? "تراجعًا" : "تأثيرًا محدودًا"
-        } في نتيجة معيار ${requirement.id} بمقدار ${Math.abs(actualDelta)} نقطة. ${mapping.sourceRuleAr}`
-      : `لا يوجد تطابق نصي مباشر بين وصف القرار ونطاق معيار ${requirement.id}. ${mapping.sourceRuleAr} الأثر التقديري المعروض (${actualDelta >= 0 ? "+" : ""}${actualDelta} نقطة) استرشادي فقط ولم يُحتسب ضمن النتيجة الإجمالية.`;
+      ? `القرار المقترح على "${input.affectedAreaAr}" قد يؤدي إلى ${
+          direction === "positive" ? "تحسّن" : direction === "negative" ? "تراجع" : "تأثير محدود"
+        } في جاهزية متطلب ${reqLabel} بمقدار ${Math.abs(actualDelta)} نقطة.`
+      : `قد يتأثر متطلب ${reqLabel} بالقرار المقترح، لكن مستوى الثقة منخفض. الأثر المعروض (${actualDelta >= 0 ? "+" : ""}${actualDelta} نقطة) استرشادي ولم يُحتسب في المؤشر. راجع البيانات المرتبطة قبل الاعتماد على النتيجة.`;
 
     impacts.push({
       requirementId: requirement.id,
@@ -275,7 +277,7 @@ function computeSimulationConfidence(
     return {
       confidence: "low",
       reasonAr:
-        "لا يوجد معيار له ارتباط نصي أو تصنيفي مؤكد بهذا القرار ضمن قواعد المطابقة الحالية، لذا لا يُتوقع أثر موثوق على النتيجة الإجمالية.",
+        "لم يظهر ارتباط واضح بين هذا القرار وأي متطلب، لذا لا يُتوقع أثر مؤكد على المؤشر.",
     };
   }
 
@@ -288,19 +290,18 @@ function computeSimulationConfidence(
     return {
       confidence: "low",
       reasonAr:
-        "أكثر من معيار متأثر يعتمد حاليًا على أدلة غير مكتملة، مما يقلل من دقة التحليل الآلي.",
+        "أكثر من متطلب متأثر يعتمد حاليًا على أدلة غير مكتملة، مما يقلل من دقة التحليل.",
     };
   }
   if (lowEvidenceCount === 1) {
     return {
       confidence: "medium",
-      reasonAr: "أحد المعايير المتأثرة يعتمد على أدلة غير مكتملة حاليًا.",
+      reasonAr: "أحد المتطلبات المتأثرة يعتمد على أدلة غير مكتملة حاليًا.",
     };
   }
   return {
     confidence: "medium",
-    reasonAr:
-      "التوقع مبني على تحليل قواعد تجريبي مرتبط بالحالة الحالية للبيانات، وليس على نموذج تنبؤ إحصائي مدرَّب على بيانات تاريخية.",
+    reasonAr: "التحليل مبني على حالة البيانات الحالية للشركة، وليس تنبؤًا إحصائيًا.",
   };
 }
 
@@ -333,31 +334,32 @@ export function simulateDecision(
   const positiveImpactsAr =
     positives.length > 0
       ? positives.map(
-          (i) => `تحسّن متوقع بمقدار ${i.delta} نقطة في معيار ${i.requirementNameAr} (${i.requirementId}).`
+          (i) =>
+            `تحسّن متوقع بمقدار ${i.delta} نقطة في متطلب ${i.requirementNameAr} (${displayRequirementId(i.requirementId)}).`
         )
-      : ["لا توجد آثار إيجابية مباشرة ومؤكدة متوقعة على معايير الامتثال الخمسة."];
+      : ["لا توجد آثار إيجابية مؤكدة متوقعة."];
 
   const negativeImpactsAr =
     negatives.length > 0
       ? negatives.map(
           (i) =>
-            `تراجع متوقع بمقدار ${Math.abs(i.delta)} نقطة في معيار ${i.requirementNameAr} (${i.requirementId}) — مستوى خطر ${riskLabelAr(i.riskLevel)}.`
+            `تراجع متوقع بمقدار ${Math.abs(i.delta)} نقطة في متطلب ${i.requirementNameAr} (${displayRequirementId(i.requirementId)}) — مستوى الخطر ${riskLabelAr(i.riskLevel)}.`
         )
-      : ["لا توجد آثار سلبية مباشرة ومؤكدة متوقعة على معايير الامتثال الخمسة."];
+      : ["لا توجد آثار سلبية مؤكدة متوقعة."];
 
   const regulatoryGapsAr = countedImpacts
     .filter((i) => i.predictedScore < 60)
     .map(
       (i) =>
-        `معيار ${i.requirementId} (${i.requirementNameAr}) قد ينخفض إلى نطاق \"غير ملتزم\" (${i.predictedScore}/100) في حال تنفيذ القرار كما هو مقترح.`
+        `قد تنخفض جاهزية متطلب ${i.requirementNameAr} (${displayRequirementId(i.requirementId)}) إلى نطاق «غير ملتزم» عند تنفيذ القرار كما هو مقترح.`
     );
 
   const preventiveActionsAr = negatives.map((i) => {
     const req = requirements.find((r) => r.id === i.requirementId)!;
-    return `قبل التنفيذ: ${req.recommendedActionAr} — لتقليل أثر القرار على معيار ${i.requirementId}.`;
+    return `قبل التنفيذ: ${req.recommendedActionAr} — لتقليل أثر القرار على متطلب ${displayRequirementId(i.requirementId)}.`;
   });
   if (preventiveActionsAr.length === 0) {
-    preventiveActionsAr.push("لا توجد إجراءات وقائية إلزامية إضافية بناءً على المحاكاة الحالية.");
+    preventiveActionsAr.push("لا توجد إجراءات وقائية إضافية مطلوبة.");
   }
 
   const { confidence, reasonAr: confidenceReasonAr } = computeSimulationConfidence(
@@ -367,8 +369,8 @@ export function simulateDecision(
 
   const explanationAr =
     countedImpacts.length > 0
-      ? `تم تحليل القرار "${input.titleAr}" بناءً على حالة الامتثال الحالية للشركة (${currentOverallScore}/100) والمعايير الخمسة المعتمدة في النموذج التجريبي. من أصل ${affectedRequirements.length} معيار له ارتباط محتمل بهذا القرار، تم احتساب أثر مؤكد على ${countedImpacts.length} منها فقط استنادًا إلى تطابق نصي أو تصنيفي واضح. الخيار الموصى به هو "${recommended.labelAr}" لأنه يحقق أفضل توازن بين الهدف التشغيلي وأثر الامتثال ضمن قواعد المحاكاة التجريبية المعتمدة. هذه محاكاة استرشادية وليست قرارًا رقابيًا رسميًا من الوزارة.`
-      : `تم تحليل القرار "${input.titleAr}" ولم يظهر أي ارتباط نصي أو تصنيفي مؤكد بين مضمونه والمعايير الخمسة المعتمدة، لذا لا يُتوقع تغيّر في النتيجة الإجمالية للامتثال (${currentOverallScore}/100). هذه محاكاة استرشادية وليست قرارًا رقابيًا رسميًا من الوزارة.`;
+      ? `يعرض التحليل المتطلبات التي قد يتأثر امتثالها بقرار "${input.titleAr}". من بين ${affectedRequirements.length} متطلبًا مرتبطًا محتملًا، ظهر أثر مؤكد على ${countedImpacts.length}. البديل المقترح هو "${recommended.labelAr}" لتحقيق أفضل توازن بين الهدف التشغيلي والجاهزية. هذه محاكاة استرشادية.`
+      : `لم يظهر ارتباط واضح بين قرار "${input.titleAr}" وأي متطلب، لذا لا يُتوقع تغيّر في المؤشر. هذه محاكاة استرشادية.`;
 
   return {
     id: `DS-${Date.now()}`,

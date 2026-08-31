@@ -35,7 +35,7 @@ export function RequirementCard({
           <p className="text-[11px] font-mono text-[var(--color-ink-faint)] mb-1">
             {requirement.id}
             {requirement.criticalGate && (
-              <span className="text-[var(--color-status-noncompliant)]"> · معيار حرج</span>
+              <span className="text-[var(--color-status-noncompliant)]"> · متطلب حرج</span>
             )}
           </p>
           <h3 className="text-sm font-semibold text-[var(--color-ink)] leading-snug">

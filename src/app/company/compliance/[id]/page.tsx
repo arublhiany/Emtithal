@@ -88,7 +88,7 @@ export default function RequirementDetailPage({
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <Panel>
-            <SectionTitle>النتيجة الحتمية</SectionTitle>
+            <SectionTitle>نتيجة التقييم</SectionTitle>
             <div className="mb-4 flex items-center gap-4">
               <span className="text-4xl font-bold tabular-nums text-[var(--color-ink)]">
                 {assessable ? show(canonical?.readiness ?? null) : "—"}
@@ -101,8 +101,8 @@ export default function RequirementDetailPage({
               </div>
             </div>
             <p className="text-xs leading-relaxed text-[var(--color-ink-muted)]">
-              الحالة والجاهزية من محرك التحقق الحتمي. القيمة غير المتاحة تُعرض «—» ولا تُحتسب صفرًا،
-              ونقص الأدلة لا يعني عدم امتثال.
+              الحالة والجاهزية محسوبة آليًا. القيمة غير المتاحة تظهر «—» ولا تُحتسب صفرًا، ونقص
+              الأدلة لا يعني عدم امتثال.
             </p>
             <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
               <div className="rounded-[var(--radius-control)] bg-[var(--color-bg)] p-3">

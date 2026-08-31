@@ -35,7 +35,7 @@ export default function GapsPage() {
       <PageHead
         eyebrow="الفجوات والمخاطر"
         title="تحليل الفجوات"
-        subtitle="كل بند مرتبط بمتطلب تنظيمي محدد ومصنّف حتميًا. لا تُحتسب أي احتمالية تنبؤية، ونقص الأدلة لا يعني عدم امتثال."
+        subtitle="كل بند مرتبط بمتطلب محدد. نقص الأدلة لا يعني عدم امتثال."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -92,13 +92,13 @@ export default function GapsPage() {
           <GapGroup
             title={UNRESOLVED_REQUIREMENT_AR}
             tone="amber"
-            hint="المتطلب لم يُحسم تنظيميًا في المصفوفة المعتمدة — فجوة لدينا، لا لدى الشركة، ولا تدخل حساب الجاهزية."
+            hint="متطلب قيد الاستكمال على مستوى التنظيم — لا يُحتسب على الشركة ولا يدخل في حساب الجاهزية."
             items={regulatoryPendingIds.map((id) => ({ key: id, primary: label(id) }))}
           />
           <GapGroup
             title="انطباق غير مؤكد"
             tone="neutral"
-            hint="تعذّر تحديد انطباق المتطلب على الشركة من الملف الحالي — يلزم استكمال بيانات الملف."
+            hint="لم يتضح ما إذا كان المتطلب ينطبق على الشركة — يلزم استكمال بيانات الملف."
             items={applicabilityPendingIds.map((id) => ({ key: id, primary: label(id) }))}
           />
         </div>

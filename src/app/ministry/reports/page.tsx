@@ -46,7 +46,7 @@ function buildDemoReport(): ComplianceReport {
       isCriticalBlocker: run.criticalBlockers.some((b) => b.requirementId === r.requirementId),
       officialSourceReferenceAr: req?.officialSource ? req.officialSource.reference : null,
       officialSourceUrls: req?.officialSource ? [...req.officialSource.urls] : [],
-      notesAr: r.regulatoryPending ? "متطلب غير محسوم تنظيميًا" : "",
+      notesAr: r.regulatoryPending ? "متطلب قيد الاستكمال تنظيميًا" : "",
     };
   });
   return buildComplianceReport({
@@ -97,7 +97,7 @@ export default function GovernmentReportsPage() {
       <PageHead
         eyebrow="الجهات الحكومية"
         title="تقرير جاهزية الامتثال"
-        subtitle="تقرير قابل للتصدير مبني على البيانات الحتمية المعتمدة — ليس تقييمًا رسميًا ولا يحتسب أي درجة إجمالية. القيم غير المتاحة تُعرض «—» ولا تُحتسب صفرًا."
+        subtitle="تقرير قابل للتصدير مبني على البيانات المعتمدة. ليس تقييمًا رسميًا، والقيم غير المتاحة تظهر «—»."
         actions={
           <>
             <Btn variant="secondary" onClick={downloadCsv}>

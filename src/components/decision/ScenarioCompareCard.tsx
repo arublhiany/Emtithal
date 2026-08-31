@@ -2,8 +2,8 @@ import type { DecisionAlternative } from "@/lib/types";
 import { RiskBadge } from "@/components/ui/Badge";
 
 const IMPACT_LABEL: Record<DecisionAlternative["complianceImpact"], string> = {
-  positive: "أثر إيجابي على الامتثال",
-  neutral: "أثر محايد على الامتثال",
+  positive: "أثر إيجابي على الجاهزية",
+  neutral: "أثر محايد على الجاهزية",
   low_negative: "أثر سلبي محدود",
   high_negative: "أثر سلبي مرتفع",
 };
@@ -42,7 +42,7 @@ export function ScenarioCompareCard({ alt }: { alt: DecisionAlternative }) {
       </div>
 
       <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border)]">
-        <span className="text-[11px] text-[var(--color-ink-muted)]">النتيجة المتوقعة</span>
+        <span className="text-[11px] text-[var(--color-ink-muted)]">الجاهزية المتوقعة</span>
         <span className="text-lg font-bold tabular-nums text-[var(--color-ink)]">
           {alt.predictedOverallScore}
         </span>

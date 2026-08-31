@@ -76,8 +76,13 @@ test('no "use client" component imports a server-only parser lib or the evidence
       false,
       `${f.path} imports the server-only evidence layer`,
     );
+    // The `@/lib/research` barrel pulls in the PDF ingester — client code must
+    // not import it, nor `ingestResearch` directly. The pure `browseResearch` /
+    // `corpus` / `types` submodules (data + view helpers only) are allowed.
     assert.equal(
-      /from\s+["']@\/lib\/research(["'/]|\/ingestResearch)/.test(f.text),
+      /from\s+["']@\/lib\/research["']|from\s+["']@\/lib\/research\/(index|ingestResearch)["']/.test(
+        f.text,
+      ),
       false,
       `${f.path} imports the server-only research layer`,
     );

@@ -41,7 +41,7 @@ export default function MinistryReviewsPage() {
       <PageHead
         eyebrow="الجهات الحكومية"
         title="طابور المراجعة"
-        subtitle="ثلاثة مسارات منفصلة: اعتراضات على تفسير الذكاء الاصطناعي، أدلة تحتاج تحققًا بشريًا، ومتطلبات غير محسومة تنظيميًا في المصفوفة المعتمدة."
+        subtitle="ثلاثة مسارات منفصلة: اعتراضات على تفسير الذكاء الاصطناعي، أدلة تحتاج تحققًا بشريًا، ومتطلبات قيد الاستكمال تنظيميًا."
       />
 
       <div>
@@ -148,7 +148,7 @@ export default function MinistryReviewsPage() {
           فجوة في المصفوفة التنظيمية المعتمدة لدينا — لا تُنسب إلى الشركة ولا تدخل حساب الجاهزية.
         </p>
         {regulatoryPendingIds.length === 0 ? (
-          <EmptyState title="لا توجد متطلبات غير محسومة تنظيميًا" />
+          <EmptyState title="لا توجد متطلبات قيد الاستكمال تنظيميًا" />
         ) : (
           <Panel className="space-y-2">
             {regulatoryPendingIds.map((id) => (

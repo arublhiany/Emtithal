@@ -14,7 +14,7 @@ export default function MinistryCompaniesPage() {
       <PageHead
         eyebrow="الجهات الحكومية"
         title="محفظة الشركات (تجريبي)"
-        subtitle="قائمة شركات خدمة الحج ضمن النموذج التجريبي مع مؤشر الجاهزية ونسبة التحقق والعوائق لكل شركة — دون درجة رسمية."
+        subtitle="شركات خدمة الحج ضمن النموذج التجريبي، مع مؤشر الجاهزية ونسبة التحقق والعوائق لكل شركة. دون درجة رسمية."
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile label="عدد الشركات" value={p.count} icon="companies" />

@@ -16,7 +16,8 @@ type IconName =
   | "reviews"
   | "bell"
   | "warning"
-  | "document";
+  | "document"
+  | "research";
 
 const P: Record<IconName, React.ReactNode> = {
   home: <path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" />,
@@ -102,6 +103,12 @@ const P: Record<IconName, React.ReactNode> = {
     <>
       <path d="M7 3.5h7l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z" />
       <path d="M14 3.5V8h4M9 12h6M9 15.5h4" />
+    </>
+  ),
+  research: (
+    <>
+      <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H12v15H6a2 2 0 0 0-2 2z" />
+      <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H12v15h6.5a1.5 1.5 0 0 1 1.5 1.5z" />
     </>
   ),
 };

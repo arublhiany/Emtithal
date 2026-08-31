@@ -82,7 +82,7 @@ export function ConfidenceBadge({
   const tone = CONFIDENCE_TONE[level];
   return (
     <BaseBadge fg={tone.fg} bg={tone.bg} size={size}>
-      ثقة الذكاء الاصطناعي: {CONFIDENCE_LABEL[level]}
+      ثقة التحليل: {CONFIDENCE_LABEL[level]}
     </BaseBadge>
   );
 }
@@ -125,7 +125,7 @@ export function DemoConfigBadge({ size = "sm" }: { size?: "sm" | "md" }) {
 export function SimulatedBadge({ size = "sm" }: { size?: "sm" | "md" }) {
   return (
     <BaseBadge fg="var(--color-accent-dark)" bg="var(--color-accent-tint)" size={size}>
-      محاكاة استرشادية — ليست قرارًا رقابيًا رسميًا
+      محاكاة استرشادية
     </BaseBadge>
   );
 }

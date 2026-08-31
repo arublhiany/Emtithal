@@ -1985,3 +1985,93 @@ equal the canonical profile; capability indicators equal a recomputation from
 canonical-derived facts; `company.ts` contains no `6200` / `260` / `RAW_PROFILE`
 and no hard-coded count assignment. Total **514 pass / 0 fail**. typecheck PASS ·
 lint PASS · build PASS (20 routes). Not committed / not pushed.
+
+## Phase 12B — Arabic UX copy quality pass
+
+Rewrote developer-facing / awkward Arabic copy across the active product to read
+as a polished government/enterprise digital product. Deterministic and
+regulatory LOGIC unchanged — only user-visible strings.
+
+Decision Simulation (primary blocker):
+- page title "اعرف أثر القرار على الامتثال قبل تنفيذه" -> "اختبر أثر القرار قبل تنفيذه"
+- "مقارنة الامتثال قبل وبعد القرار" -> "أثر القرار على الجاهزية"
+- metric "نسبة الامتثال الإجمالية" -> "مؤشر جاهزية امتثال"
+- "محسوبة وفق جدول قواعد تجريبي يربط نوع القرار بحساسية كل معيار." ->
+  "يعرض امتثال المتطلبات التي قد يتأثر وضعها بالقرار المقترح."
+- removed the per-row "المصدر: {sourceRuleAr}" engineering line
+- confidence badge "ثقة الذكاء الاصطناعي: عالية" -> "ثقة التحليل: مرتفعة"
+- engine strings (`decisionEngine.ts`): dropped "لا يوجد تطابق نصي مباشر…",
+  "قواعد المطابقة", "نموذج تنبؤ إحصائي", "المعايير الخمسة", the "(N/100)" score
+  fragments and the repeated "قرارًا رقابيًا رسميًا من الوزارة" disclaimer;
+  every requirement reference now routed through `displayRequirementId`
+  (canonical HAJ-EXP-04, never CR-004).
+- `decisionAgent.ts` `sourceRuleAr` strings rewritten to plain language
+  (no "تطابق نصي مباشر" / "فئة القرار"); unused `CATEGORY_LABEL_AR` removed.
+
+Other screens: "محرك التحقق الحتمي" -> "محسوبة آليًا" (dashboard, compliance,
+compliance/[id], ministry company detail); "معيار/معايير" -> "متطلب/متطلبات"
+in the general UI (nav label, requirement card, requirement-management title);
+"غير محسوم تنظيميًا" -> "قيد الاستكمال"; several long subtitles trimmed
+(gaps, risks, reviews, reports, ministry/requirements/new, ministry/alerts).
+Landing copy untouched (locked Figma constants).
+
+New: `src/lib/ui/__tests__/phase12-copy.test.ts` (8). Total **522 pass / 0 fail**.
+typecheck PASS · lint PASS · build PASS (20 routes). Not committed / not pushed.
+
+## Phase 12B — research support feature + landing (Figma access blocked)
+
+**Landing:** NOT changed. The Figma MCP integration returned
+"You've reached the Figma MCP tool call limit on the Starter plan" — the actual
+rendered landing frame could not be inspected, so the landing was left exactly
+as approved rather than approximated from memory. Landing copy constants and
+`src/app/page.tsx` are byte-unchanged.
+
+**دعم بحثي — now a visible product feature:**
+- New route `/company/research` (`"use client"`), added to `COMPANY_NAV`
+  ("دعم بحثي", new `research` line icon in `NavIcon`), plus a concise entry-point
+  panel on the company dashboard.
+- Title "دعم بحثي"; search field "ابحث في الأبحاث والدراسات" (matches title,
+  organization/source, topic, keyword); boundary note verbatim
+  "الدراسات تدعم القرار ولا تُعد اشتراطات تنظيمية." + `BoundaryChip kind="RESEARCH"`.
+- New `src/lib/research/browseResearch.ts` — client-safe (imports only the pure
+  `./corpus` + `./types`, never the `./index` barrel that pulls the PDF
+  ingester). `searchResearchCorpus(query)` returns display views built ONLY from
+  approved-corpus fields: title, publisher, verbatim passage, curated scope
+  ("كيف يدعم القرار"), `officialSourceReference` + `officialUrl`.
+- Sources whose official document is not ingested (the Nawwariyah PDF) appear in
+  a separate "مصادر بانتظار الإتاحة" section with title + publisher + status,
+  and NO fabricated insight.
+- No internal vocabulary exposed (corpus / retrieval / RAG / embedding / agent /
+  PENDING_LOCAL_INGESTION) — asserted.
+- `serverOnly.test.ts` widened to allow the pure `@/lib/research/browseResearch`
+  submodule from a client component while still blocking the barrel + ingester.
+
+New tests: `browseResearch.test.ts` (10), `phase12-copy.test.ts` (carried).
+Total **532 pass / 0 fail**. typecheck PASS · lint PASS · build PASS (21 routes).
+Not committed / not pushed.
+
+## Phase 12B — landing rebuilt to the approved reference image
+
+`src/app/page.tsx` rebuilt to match the product-owner-supplied approved landing
+image (attached directly; Figma MCP not used). ONLY `page.tsx` changed —
+`src/lib/ui/landing.ts` (locked copy) and `Logo.tsx` are untouched.
+
+Composition now matches the reference: faint circuit-trace motif behind a
+borderless header; canonical `<Logo>` top-right (height 54); national-identity
+text ("رؤية 2030 / المملكة العربية السعودية") + globe language control
+top-left; centred hero — large bold headline, narrower grey supporting
+paragraph, a small rounded AI-disclaimer chip on `--color-primary-tint`; a
+single warm-grey rounded login card (radius 20) holding the "تسجيل الدخول"
+heading, a two-tone person glyph, and the two full-width dark-green entry
+buttons (both filled now); thin-rule footer with the disclaimer (start) and
+"امتثال © 1447هـ" (end).
+
+Every Arabic string is the locked set from `@/lib/ui/landing` verbatim. The
+self-registration link visible in the reference image is intentionally NOT
+added — it was removed by an earlier explicit product-owner decision and is
+forbidden by the landing tests. The official Vision 2030 emblem graphic and the
+exact circuit artwork are not available as assets; a lightweight text/SVG
+stand-in is used for each, ready to swap for the official assets.
+
+Checks: typecheck PASS · lint PASS · test **532 pass / 0 fail** · build PASS
+(21 routes). Not committed / not pushed.

@@ -272,8 +272,8 @@ export default function RequirementDetailPage({ params }: { params: Promise<{ id
         </SectionTitle>
         <Panel className="space-y-3">
           <p className="text-xs text-[var(--color-ink-muted)]">
-            يُحدَّد نطاق الشركات المتأثرة باستخدام قاعدة الانطباق الحتمية المعتمدة — لا يُبثّ الإشعار
-            لجميع الشركات. تغيّر المتطلب لا يجعل أي شركة «غير ملتزمة» تلقائيًا.
+            يُحدَّد نطاق الشركات المتأثرة وفق قواعد الانطباق المعتمدة، ويصل الإشعار إلى الشركات
+            المتأثرة فقط. تغيّر المتطلب لا يجعل أي شركة «غير ملتزمة» تلقائيًا.
           </p>
           <div className="flex flex-wrap gap-2">
             {(

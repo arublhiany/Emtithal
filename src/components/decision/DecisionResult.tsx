@@ -24,12 +24,12 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
 
       {/* Before / after */}
       <Card>
-        <SectionHeader title="مقارنة الامتثال قبل وبعد القرار" />
+        <SectionHeader title="أثر القرار على الجاهزية" />
         <div className="grid sm:grid-cols-2 gap-6">
           <CompareBar
             beforeValue={result.currentOverallScore}
             afterValue={result.predictedOverallScore}
-            label="نسبة الامتثال الإجمالية"
+            label="مؤشر جاهزية امتثال"
           />
           <div className="flex items-center gap-4 sm:justify-end">
             <div className="text-center">
@@ -53,7 +53,7 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
       <Card>
         <SectionHeader
           title="المتطلبات المتأثرة"
-          subtitle="محسوبة وفق جدول قواعد تجريبي يربط نوع القرار بحساسية كل معيار."
+          subtitle="يعرض امتثال المتطلبات التي قد يتأثر وضعها بالقرار المقترح."
         />
         <div className="space-y-3">
           {result.affectedRequirements.map((r) => (
@@ -94,17 +94,14 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
               </p>
               {!r.includedInScore && (
                 <p className="text-[11px] text-[var(--color-accent-dark)] mt-1.5 font-medium">
-                  أثر غير مؤكد — لم يُحتسب ضمن النتيجة الإجمالية.
+                  أثر غير مؤكد — لم يُحتسب في المؤشر.
                 </p>
               )}
-              <p className="text-[11px] text-[var(--color-ink-faint)] mt-1.5">
-                المصدر: {r.sourceRuleAr}
-              </p>
             </div>
           ))}
           {result.affectedRequirements.length === 0 && (
             <p className="text-xs text-[var(--color-ink-muted)]">
-              لم يظهر أي ارتباط نصي أو تصنيفي مؤكد بين هذا القرار والمعايير الخمسة المعتمدة.
+              لم يظهر ارتباط واضح بين هذا القرار وأي متطلب.
             </p>
           )}
         </div>
@@ -158,7 +155,7 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
       <Card>
         <SectionHeader
           title="البدائل المقترحة"
-          subtitle="مقارنة الخيارات المتاحة وفق الأثر على الامتثال، الخطر التشغيلي، وإمكانية التنفيذ."
+          subtitle="مقارنة البدائل حسب الأثر على الجاهزية والمخاطرة التشغيلية."
         />
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {result.alternatives.map((alt) => (

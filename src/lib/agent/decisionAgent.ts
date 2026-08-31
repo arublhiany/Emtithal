@@ -55,14 +55,6 @@ import type { ConfidenceLevel, DecisionCategory, DecisionInput, Requirement } fr
 const HIGH_TIER_PRIOR = 0.7; // minimum category-only prior that can surface an "uncertain" (uncounted) link
 const KEYWORD_ONLY_SENSITIVITY = 0.45; // sensitivity used when only content (no category prior) justifies inclusion
 
-const CATEGORY_LABEL_AR: Record<DecisionCategory, string> = {
-  staffing_change: "تغييرات في القوى العاملة",
-  service_change: "تغيير في الخدمة أو نقاط التقديم",
-  guest_experience_process: "عمليات تجربة الضيف",
-  evidence_process_change: "تغيير في عمليات التوثيق والأدلة",
-  operational_change: "تغيير تشغيلي عام",
-};
-
 /**
  * Category → requirement plausibility priors (DEMO CONFIGURATION).
  * Kept deliberately modest: these are *candidate* signals, not auto-include
@@ -222,7 +214,6 @@ export function interpretDecision(
   requirements: Requirement[]
 ): DecisionAgentMapping[] {
   const decisionText = `${input.titleAr} ${input.descriptionAr} ${input.affectedAreaAr}`;
-  const categoryLabelAr = CATEGORY_LABEL_AR[input.category];
   const priors = CATEGORY_PRIOR[input.category];
 
   const mappings: DecisionAgentMapping[] = [];
@@ -231,7 +222,6 @@ export function interpretDecision(
     const categoryPrior = priors[requirement.id] ?? 0;
     const matched = matchKeywords(decisionText, REQUIREMENT_KEYWORDS[requirement.id] ?? []);
     const hasKeywordMatch = matched.length > 0;
-    const sampleTerms = matched.slice(0, 2).join("، ");
 
     if (hasKeywordMatch && categoryPrior > 0) {
       mappings.push({
@@ -239,7 +229,7 @@ export function interpretDecision(
         includedInScore: true,
         confidence: "high",
         sensitivity: categoryPrior,
-        sourceRuleAr: `تطابق نصي مباشر ("${sampleTerms}") مع فئة القرار "${categoryLabelAr}" التي ترتبط عادة بهذا المعيار.`,
+        sourceRuleAr: `يرتبط هذا المتطلب عادةً بهذا النوع من القرارات، وجاء وصف القرار متسقًا مع هذا الارتباط.`,
       });
       continue;
     }
@@ -249,7 +239,7 @@ export function interpretDecision(
         includedInScore: true,
         confidence: "medium",
         sensitivity: KEYWORD_ONLY_SENSITIVITY,
-        sourceRuleAr: `تطابق نصي مباشر ("${sampleTerms}") مع مضمون القرار، رغم أن فئة القرار "${categoryLabelAr}" لا ترتبط عادة بهذا المعيار.`,
+        sourceRuleAr: `أشار وصف القرار إلى هذا المتطلب، وإن لم يكن مرتبطًا عادةً بهذا النوع من القرارات.`,
       });
       continue;
     }
@@ -259,7 +249,7 @@ export function interpretDecision(
         includedInScore: false,
         confidence: "low",
         sensitivity: categoryPrior,
-        sourceRuleAr: `ارتباط عام محتمل بفئة القرار "${categoryLabelAr}" فقط، دون تطابق نصي مباشر في وصف القرار — غير مؤكد ولم يُحتسب ضمن النتيجة الإجمالية.`,
+        sourceRuleAr: `ارتباط محتمل بهذا النوع من القرارات فقط، دون إشارة واضحة في وصف القرار — غير مؤكد ولم يُحتسب في المؤشر.`,
       });
       continue;
     }

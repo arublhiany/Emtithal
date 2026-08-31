@@ -30,7 +30,7 @@ export default function ImprovementPlanPage() {
       <PageHead
         eyebrow="خطة التحسين"
         title="خطة التحسين والإجراءات التصحيحية"
-        subtitle="إجراءات مقترحة لمعالجة الفجوات، مرتبطة بمتطلباتها. الأثر المتوقع تقدير تجريبي إرشادي فقط."
+        subtitle="إجراءات مقترحة لمعالجة الفجوات، مرتبطة بمتطلباتها. الأثر المتوقع تقدير إرشادي فقط."
       />
 
       <div className="grid gap-4 sm:grid-cols-3">

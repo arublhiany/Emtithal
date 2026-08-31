@@ -22,8 +22,8 @@ export default function RequirementsListPage() {
     <div>
       <PageHead
         eyebrow="الجهات الحكومية"
-        title="إدارة المتطلبات والمعايير"
-        subtitle="دورة حياة كاملة للمتطلب: إنشاء، تحديث، إصدار نسخة، وإلغاء — مع حفظ السجل التنظيمي كاملًا."
+        title="إدارة المتطلبات التنظيمية"
+        subtitle="دورة حياة كاملة للمتطلب: إنشاء، تحديث، إصدار نسخة، وإلغاء، مع حفظ السجل كاملًا."
         actions={
           <Link href="/ministry/requirements/new">
             <Btn variant="primary">متطلب جديد</Btn>

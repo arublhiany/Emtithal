@@ -32,8 +32,8 @@ export default function DecisionSimulationPage() {
     <div className="space-y-6">
       <PageHead
         eyebrow="محاكاة القرار"
-        title="اعرف أثر القرار على الامتثال قبل تنفيذه"
-        subtitle="أدخل قرارًا تشغيليًا مقترحًا لتحليل المعايير المتأثرة وتوقّع الأثر ومقارنة البدائل — نتائج حتمية، دون تنبؤ بالذكاء الاصطناعي."
+        title="اختبر أثر القرار قبل تنفيذه"
+        subtitle="أدخل قرارًا تشغيليًا مقترحًا لعرض المتطلبات التي قد يتأثر امتثالها ومقارنة البدائل. النتائج حتمية."
       />
 
       <div className="grid lg:grid-cols-5 gap-6">
@@ -43,22 +43,29 @@ export default function DecisionSimulationPage() {
           {state.decisionHistory.length > 0 && (
             <div className="card p-4 mt-4">
               <p className="text-xs font-semibold text-[var(--color-ink)] mb-2">
-                محاكاات سابقة في هذه الجلسة
+                محاكاات هذه الجلسة
               </p>
               <div className="space-y-1.5">
-                {state.decisionHistory.map((r) => (
-                  <button
-                    key={r.id}
-                    onClick={() => setActiveResultId(r.id)}
-                    className={`w-full text-right rounded-lg px-3 py-2 text-xs transition-colors ${
-                      activeResult?.id === r.id
-                        ? "bg-[var(--color-primary-tint)] text-[var(--color-primary)] font-medium"
-                        : "text-[var(--color-ink-muted)] hover:bg-[var(--color-bg)]"
-                    }`}
-                  >
-                    {r.decision.titleAr} — {r.currentOverallScore}←{r.predictedOverallScore}
-                  </button>
-                ))}
+                {state.decisionHistory.map((r) => {
+                  const delta = r.predictedOverallScore - r.currentOverallScore;
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => setActiveResultId(r.id)}
+                      className={`w-full text-right rounded-lg px-3 py-2 text-xs transition-colors ${
+                        activeResult?.id === r.id
+                          ? "bg-[var(--color-primary-tint)] text-[var(--color-primary)] font-medium"
+                          : "text-[var(--color-ink-muted)] hover:bg-[var(--color-bg)]"
+                      }`}
+                    >
+                      <span className="block truncate">{r.decision.titleAr}</span>
+                      <span className="text-[var(--color-ink-faint)]">
+                        الأثر المتوقع: {delta > 0 ? "+" : ""}
+                        {delta} نقطة
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -70,7 +77,7 @@ export default function DecisionSimulationPage() {
           ) : (
             <EmptyState
               title="لا توجد محاكاة بعد"
-              hint="أدخل قرارًا تشغيليًا وشغّل المحاكاة لعرض تحليل الأثر المتوقع على الامتثال."
+              hint="أدخل قرارًا تشغيليًا وشغّل المحاكاة لعرض المتطلبات المتأثرة والبدائل."
             />
           )}
         </div>

@@ -71,7 +71,7 @@ export const RISK_TONE: Record<RiskLevel, { fg: string; bg: string }> = {
 };
 
 export const CONFIDENCE_LABEL: Record<ConfidenceLevel, string> = {
-  high: "عالية",
+  high: "مرتفعة",
   medium: "متوسطة",
   low: "منخفضة",
 };

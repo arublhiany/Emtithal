@@ -7,6 +7,7 @@ import { displayRequirementId } from "@/lib/data/regulatory";
 import { PageHead, Panel, SectionTitle, AlertBanner, Chip } from "@/components/ui/kit";
 import { KpiTile, Donut, ProgressBar, BarChartH } from "@/components/ui/viz";
 import { AlertCard } from "@/components/alerts/AlertCard";
+import { NavIcon } from "@/components/layout/NavIcon";
 import {
   READINESS_INDEX_AR,
   VERIFICATION_COVERAGE_AR,
@@ -60,9 +61,8 @@ export default function CompanyDashboardPage() {
       />
 
       {hasUnresolvedCriticalGate && (
-        <AlertBanner tone="red" title="عائق حرج قائم — متطلب حرج بحالة غير ملتزم">
-          {READINESS_INDEX_AR} العام لا يُخفي متطلبًا حرجًا غير مستوفٍ. راجع المتطلبات الحرجة قبل أي
-          إجراء آخر.
+        <AlertBanner tone="red" title="عائق حرج — متطلب حرج بحالة غير ملتزم">
+          يوجد متطلب حرج غير مستوفٍ. عالجه قبل أي إجراء آخر، بصرف النظر عن قيمة {READINESS_INDEX_AR}.
         </AlertBanner>
       )}
 
@@ -109,8 +109,8 @@ export default function CompanyDashboardPage() {
           نظرة عامة على المتطلبات
         </SectionTitle>
         <p className="mb-3 text-xs text-[var(--color-ink-muted)]">
-          {applicableCount} متطلبًا منطبقًا من {canonicalRequirements.length} عبر ثلاث جهات — الحالة
-          والجاهزية من محرك التحقق الحتمي، دون درجة رسمية.
+          {applicableCount} متطلبًا منطبقًا من {canonicalRequirements.length} عبر ثلاث جهات. الحالة
+          والجاهزية محسوبة آليًا، دون درجة رسمية.
         </p>
         <div className="grid gap-4 lg:grid-cols-3">
           {authoritiesView.map((a) => (
@@ -198,6 +198,26 @@ export default function CompanyDashboardPage() {
           />
         </Panel>
       </div>
+
+      <Panel className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 text-[var(--color-primary)]" aria-hidden>
+            <NavIcon name="research" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-[var(--color-ink)]">دعم بحثي</p>
+            <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
+              ابحث في الأبحاث والدراسات الداعمة للقرار. الدراسات تدعم القرار ولا تُعد اشتراطات تنظيمية.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/company/research"
+          className="shrink-0 text-xs font-semibold text-[var(--color-primary)] hover:underline"
+        >
+          استعرض ←
+        </Link>
+      </Panel>
     </div>
   );
 }
