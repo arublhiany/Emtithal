@@ -7,7 +7,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import type {
+  DecisionInterpretation,
   DecisionObject,
+  DecisionRecommendation,
   EvidenceAgentAnalysis,
   EvidenceAgentOutput,
   RegulatoryAgentAnswer,
@@ -18,7 +20,9 @@ import type {
 } from "@/lib/model";
 import {
   AI_OUTPUT_SCHEMAS,
+  decisionInterpretationSchema,
   decisionObjectSchema,
+  decisionRecommendationSchema,
   evidenceAgentAnalysisSchema,
   evidenceAgentOutputSchema,
   regulatoryAgentAnswerSchema,
@@ -28,7 +32,9 @@ import {
   scenarioSchema,
 } from "@/lib/ai/schemas";
 import type {
+  DecisionInterpretationParsed,
   DecisionObjectParsed,
+  DecisionRecommendationParsed,
   EvidenceAgentAnalysisParsed,
   EvidenceAgentOutputParsed,
   RegulatoryAgentAnswerParsed,
@@ -45,12 +51,14 @@ const _rga: RegulatoryAgentAnswer = {} as RegulatoryAgentAnswerParsed;
 const _evi: EvidenceAgentOutput = {} as EvidenceAgentOutputParsed;
 const _eva: EvidenceAgentAnalysis = {} as EvidenceAgentAnalysisParsed;
 const _dec: DecisionObject = {} as DecisionObjectParsed;
+const _din: DecisionInterpretation = {} as DecisionInterpretationParsed;
+const _drc: DecisionRecommendation = {} as DecisionRecommendationParsed;
 const _sce: Scenario = {} as ScenarioParsed;
 const _res: ResearchQueryResult = {} as ResearchQueryResultParsed;
 // ScenarioComparisonResult minus the guardrail-forbidden `affectedStatuses`.
 const _cmp: Omit<ScenarioComparisonResult, "affectedStatuses"> =
   {} as ScenarioComparisonResultParsed;
-void [_reg, _rga, _evi, _eva, _dec, _sce, _res, _cmp];
+void [_reg, _rga, _evi, _eva, _dec, _din, _drc, _sce, _res, _cmp];
 
 // -- runtime validity + strictness ----------------------------------------
 
@@ -181,6 +189,52 @@ test("decisionObjectSchema: valid parses (value/unit nullable); strict", () => {
   assert.equal(decisionObjectSchema.safeParse({ ...valid, value: null, unit: null }).success, true);
 });
 
+test("decisionInterpretationSchema (Phase 7): valid parses; strict; constraints[]; no compliance/weight field", () => {
+  const valid = {
+    decisionTitleAr: "زيادة الحجاج",
+    decisionSummaryAr: "رفع العدد من 4200 إلى 5200 مع بقاء القوى العاملة 180",
+    requestedChanges: [{ fieldPath: "pilgrims.count", toValue: "5200", intentAr: "زيادة العدد" }],
+    constraints: [
+      { fieldPath: "workforce.count", expectedValue: "180", intentAr: "إبقاء عدد القوى العاملة" },
+    ],
+    assumptionsAr: [],
+    ambiguitiesAr: [],
+    missingInfoAr: [],
+    interpretationConfidence: "MEDIUM" as const,
+    needsHumanReview: false,
+  };
+  assert.equal(decisionInterpretationSchema.safeParse(valid).success, true);
+  assert.equal(
+    decisionInterpretationSchema.safeParse({ ...valid, complianceStatus: "COMPLIANT" }).success,
+    false,
+  );
+  // lone-string explanatory list tolerated
+  assert.equal(
+    decisionInterpretationSchema.safeParse({ ...valid, assumptionsAr: "افتراض واحد" }).success,
+    true,
+  );
+});
+
+test("decisionRecommendationSchema (Phase 7): valid parses; strict; nullable recommendedScenarioId", () => {
+  const valid = {
+    recommendedScenarioId: "A" as string | null,
+    recommendationAr: "ننصح بالسيناريو أ",
+    tradeoffsAr: [],
+    assumptionsAr: [],
+    scenarioExplanations: [{ scenarioId: "A", whyChangedAr: "لم تتغير المؤشرات الحتمية" }],
+    needsHumanReview: true,
+  };
+  assert.equal(decisionRecommendationSchema.safeParse(valid).success, true);
+  assert.equal(
+    decisionRecommendationSchema.safeParse({ ...valid, recommendedScenarioId: null }).success,
+    true,
+  );
+  assert.equal(
+    decisionRecommendationSchema.safeParse({ ...valid, officialWeight: 3 }).success,
+    false,
+  );
+});
+
 test("scenarioComparisonResultSchema: valid parses; `affectedStatuses` is rejected (omitted + strict)", () => {
   const scenario = {
     scenarioId: "A",
@@ -251,7 +305,9 @@ test("researchQueryResultSchema: CORPUS_PENDING must have no studies", () => {
 
 test("the schema registry exposes every canonical agent output schema", () => {
   assert.deepEqual(Object.keys(AI_OUTPUT_SCHEMAS).sort(), [
+    "decisionInterpretation",
     "decisionObject",
+    "decisionRecommendation",
     "evidenceAgentAnalysis",
     "evidenceAgentOutput",
     "regulatoryAgentAnswer",

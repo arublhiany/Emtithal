@@ -11,7 +11,13 @@ export * from "./agentResult";
 
 import { regulatoryAgentAnswerSchema, regulatoryAgentOutputSchema } from "./regulatory";
 import { evidenceAgentAnalysisSchema, evidenceAgentOutputSchema } from "./evidence";
-import { decisionObjectSchema, scenarioComparisonResultSchema, scenarioSchema } from "./decision";
+import {
+  decisionInterpretationSchema,
+  decisionObjectSchema,
+  decisionRecommendationSchema,
+  scenarioComparisonResultSchema,
+  scenarioSchema,
+} from "./decision";
 import { researchQueryResultSchema } from "./research";
 
 /** Named lookup for the canonical agent output schemas. */
@@ -21,6 +27,8 @@ export const AI_OUTPUT_SCHEMAS = {
   evidenceAgentOutput: evidenceAgentOutputSchema,
   evidenceAgentAnalysis: evidenceAgentAnalysisSchema,
   decisionObject: decisionObjectSchema,
+  decisionInterpretation: decisionInterpretationSchema,
+  decisionRecommendation: decisionRecommendationSchema,
   scenario: scenarioSchema,
   scenarioComparisonResult: scenarioComparisonResultSchema,
   researchQueryResult: researchQueryResultSchema,

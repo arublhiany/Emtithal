@@ -27,6 +27,17 @@ export type {
   RetrievalResult,
   RetrievalKind,
 } from "./regulatoryRetrieval";
+export { interpretDecision, simulateDecisionScenarios } from "./decisionAgent";
+export type {
+  DecisionAgentInput,
+  DecisionAgentOptions,
+  DecisionAgentFailureCode,
+  DecisionInterpretationView,
+  DecisionScenarioView,
+  DecisionRecommendationView,
+  DecisionSimulationOutput,
+  ScenarioProvenance,
+} from "./decisionAgent";
 export { analyzeEvidence, mapEvidenceToRequirements } from "./evidenceAgent";
 export type {
   EvidenceAgentInput,

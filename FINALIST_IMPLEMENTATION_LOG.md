@@ -884,6 +884,182 @@ output passed Zod + guardrails. No secret content.
 
 ---
 
+### Phase 7 — Decision Intelligence + deterministic scenario simulation — IMPLEMENTATION COMPLETE, AWAITING APPROVAL
+Not committed. `AGENTS.md` / `CLAUDE.md` untouched. No UI/Figma change. **No new
+dependency.** No regulatory fact / weight / target / penalty added. No Official
+Score — `officialScoreComputed: false` is threaded through every scenario. The
+legacy `simulateDecision` (`decisionEngine.ts`, weighted `computeOverallScore`,
+wired to `/company/decision-simulation`) is **untouched** and remains the
+explicitly-labelled fallback.
+
+**Authority split.** AI does INTERPRETATION and RECOMMENDATION prose only. All
+numbers come from the existing Phase 2 applicability engine and Phase 3
+verification/readiness engine, run on **cloned** profiles. The AI never
+computes a status / readiness / coverage, never invents a requirement / weight /
+penalty / integration, never resolves an `UNRESOLVED_REQUIREMENT`, never marks
+evidence verified.
+
+**Closed operational-variable catalog** (`decisionScenarioEngine.ts` —
+`MUTABLE_DECISION_FIELDS`): exactly eight EXACT canonical `CanonicalCompanyProfile`
+field paths — `pilgrims.count`, `workforce.count`, `directContactWorkers.count`,
+`nusukApplicablePersons.count`, and the four `declaredFacts.*` booleans
+(`experienceTrackScopeDeclared`, `companyResponsibleForCamp`,
+`contractsExternalServiceProviders`, `providesOrEnsuresCatering`). `validateMutation`
+returns `UNSUPPORTED_DECISION_VARIABLE` for any other path and `INVALID_VALUE`
+for a bad type / negative / non-integer / implausible value. Every mutation
+carries `fieldPath`, `currentValue`, `scenarioValue`, and `source`
+(`USER_STATED` | `CURRENT_PROFILE` | `SCENARIO_ASSUMPTION`).
+
+**Change vs. constraint (correctness fix).** The interpretation schema now
+carries `constraints[]` alongside `requestedChanges[]`. A user "keep/same" value
+(e.g. "مع بقاء عدد القوى العاملة 180") is a `ValidatedConstraint`
+(`fieldPath` + `expectedValue` + `source: "USER_STATED"` + `intentAr`), validated
+against the SAME closed catalog + type rules. A `requestedChange` whose value
+already equals the current value is **not** a change — it is folded into
+`constraints` (never kept as a no-op mutation, never reclassified as
+`SCENARIO_ASSUMPTION`). An explicit change on a field overrides any "keep" on the
+same field (and flags review). Scenario B/C generation **respects constraints**:
+a candidate scenario whose mutation would move a constrained field is **not
+emitted** (e.g. capacity-adjusted C is dropped when `workforce.count` is
+constrained); a mutation equal to the constrained value is stripped as a no-op.
+`interpretation.constraints` is visible on the final result.
+
+**Decision Agent API** (`src/lib/ai/agents/decisionAgent.ts`, server-only):
+- `interpretDecision({ textAr, profile? }, opts?)` → `DecisionInterpretationView`
+  — natural language → `requestedChanges` (each post-validated against the
+  catalog; rejected ones surfaced in `rejectedChanges`, never renamed) +
+  `constraints`, `assumptionsAr` / `ambiguitiesAr` / `missingInfoAr`,
+  `interpretationConfidence`, `needsHumanReview`. No valid change ⇒
+  `UNSUPPORTED_DECISION` (all rejected as out-of-catalog) or
+  `INSUFFICIENT_DECISION_DATA`.
+- `simulateDecisionScenarios({ textAr, profile? }, opts?)` →
+  `DecisionSimulationOutput` — interpret → build CURRENT + up to 3 scenarios →
+  run the engines on clones → deterministic diff → one AI recommendation call.
+- `opts.client` injects an `AIClient` for tests. Shared `AIClient` / provider
+  abstraction, `decisionInterpretationSchema` / `decisionRecommendationSchema`
+  (`.strict()`, registered), shared guardrails (`approvedRequirementIds` = whole
+  corpus, `approvedAuthorityIds` = the 3), safe logging, one-retry maximum.
+
+**CURRENT baseline** = `runDeterministicState("CURRENT", profile, [], DEMO_VERIFICATION_INPUTS)`
+— a no-op clone through `verifyAll`; a test asserts its KPIs deep-equal
+`kpisFromRun(getDemoVerificationRun())` (Readiness Index, Verification Coverage,
+status counts, critical blockers, verification gaps, `regulatoryPendingIds`,
+`applicabilityPendingIds`). Never AI-generated.
+
+**Scenario A / B / C.** A = the user's validated changes (`USER_PROPOSED`,
+`USER_STATED` mutations). B = *phased* — numeric deltas halved and tagged
+`SCENARIO_ASSUMPTION`; boolean flips deferred to current (dropped from B). C =
+*capacity-adjusted* — A's changes plus, when a served-volume field rises and
+`workforce.count` is declared and not user-changed, a proportional
+`workforce.count` bump tagged `SCENARIO_ASSUMPTION`. B / C are emitted only when
+they differ from A and each other — otherwise fewer scenarios are returned
+rather than inventing operational facts. An AI-proposed number is never
+presented as company data.
+
+**Deterministic simulation pipeline** (per scenario, `runDeterministicState`):
+`structuredClone` the profile → apply validated mutations to the clone ONLY →
+`verifyAll(requirements, clone, DEMO_VERIFICATION_INPUTS)` → snapshot KPIs +
+operational metrics. The stored `DEMO_COMPANY_PROFILE` is never mutated (asserted).
+
+**Internal operational indicator (correctness fix).** `operationalMetrics(profile)`
+computes `pilgrimsPerWorkforceMember = pilgrims.count / workforce.count` (`raw`,
+2-decimal `display`, `provenanceFieldPaths: ["pilgrims.count","workforce.count"]`,
+`classification: "INTERNAL_OPERATIONAL_INDICATOR"`, `null` when a value is missing
+or `workforce = 0`). It is explicitly **not** an official requirement / compliance
+measure / readiness component / risk tier / government threshold — no "safe" or
+"required" ratio is invented — and it **never** feeds readiness, coverage,
+blockers, or any score. It is on `DeterministicScenarioState.operationalMetrics`
+and its deterministic move is in `ScenarioDiff.operationalMetricChanges`
+(`direction: INCREASED | DECREASED | UNCHANGED | UNDETERMINED`). A pure
+pilgrim-volume change now shows a real deterministic operational effect
+(4200/180 ≈ 23.33 → 5200/180 ≈ 28.89) even though it has no verified regulatory
+or readiness effect.
+
+**Scenario diff / "why changed"** (`diffAgainst`, deterministic, before any AI):
+`fieldsChanged`, `applicabilityChanges` (from Phase 2 outcomes),
+`verificationStatusChanges` (from Phase 3), `readinessDelta` / `coverageDelta`
+(RAW − RAW), `blockersAdded` / `blockersRemoved`, `verificationGapsAdded` /
+`Removed`, `regulatoryPendingDelta`, `applicabilityPendingDelta`,
+`operationalMetricChanges`, deduped `sourceLineage`, and `unresolvedRequirementIds`.
+
+**Deterministic "why did the result change?" (correctness fix).**
+`buildWhyChangedAr(diff)` produces the authoritative user-facing explanation as a
+list of Arabic lines built ONLY from the diff fields (changed fields, operational
+metric move, applicability changed/not, readiness changed/not, coverage
+changed/not, blockers/gaps added/removed, uncertainty deltas, unresolved IDs).
+When there is an operational change but no verified regulatory/readiness effect
+it states this explicitly and safely — "تغيّر المؤشر التشغيلي الداخلي … بينما لم
+ينتج عن هذا التغيير وحده أثر تنظيمي أو تغيّر في مؤشر الجاهزية … لا يعني هذا أنه لا
+يمكن أن ينطبق أي متطلب مستقبلًا." It is on `DecisionScenarioView.whyChangedAr`.
+The AI may add an optional per-scenario `aiNoteAr` (prose-guarded) but never
+replaces the deterministic list. The recommendation prompt is fed ONLY the diff;
+`scenarioExplanations` are filtered to real scenario IDs.
+
+**Readiness / Coverage / blockers — locked.** All KPIs are read straight off the
+Phase 3 `VerificationRun`: unweighted RAW-mean readiness over assessable
+eligible (`APPLICABLE` + `SPECIFIED`); coverage = assessable eligible / all
+eligible; critical blocker = `SPECIFIED` + `CRITICAL` + `NON_COMPLIANT` only.
+No recomputation, no Official Score.
+
+**Recommendation logic.** `recommendedScenarioId` is post-validated against the
+computed IDs (a fabricated ID → `null`); it is not "highest readiness wins" —
+the prompt is told a scenario that adds a critical blocker or leans on
+unconfirmed assumptions may be worse.
+
+**AI prose grounding / rejection (correctness fix).** After the recommendation
+call, `recommendationAr` + every `tradeoffsAr` / `assumptionsAr` /
+`scenarioExplanations[].whyChangedAr` is scanned by the Phase 6
+`scanEvidenceProseForVerdict` (rejects BOTH affirmative and negative compliance
+verdicts — "الشركة ملتزمة" / "غير ملتزمة" / "compliant" / "non-compliant" …) and
+by a `proseClaimsKpiNumber` check (any readiness/coverage number or bare `%`).
+Any hit → the **whole AI recommendation is discarded** (`available: false`,
+`failureCode: "GUARDRAIL_REJECTED"`, all prose nulled, `needsHumanReview: true`);
+the deterministic `CURRENT` / scenarios / diffs / `whyChangedAr` are retained.
+The recommendation system prompt now also forbids stating any KPI number and any
+positive-or-negative compliance verdict.
+
+**needsHumanReview follows the RECOMMENDED scenario (correctness fix).** It is
+forced when the ACTUAL recommended scenario contains a `SCENARIO_ASSUMPTION`
+mutation, adds a critical blocker, or touches a material
+`UNRESOLVED_REQUIREMENT`; or when `recommendedScenarioId` is `null`, the
+interpretation itself needs review, or the model set its own flag. It is **not**
+forced merely because an *unselected* alternative (B/C) contains assumptions.
+
+Recommendation-only AI failure keeps the deterministic scenarios + diffs and
+returns `recommendation.available = false` (no fabricated prose).
+
+**Source lineage (§12).** `requirementLineage(id)` returns `requirementId`,
+canonical `titleAr`, `authorityId`, `regulatoryResolution`,
+`officialSourceReference` / `urls` / `locatorNote`, `locatorStatus`,
+`matrixSourceRef`, `season` — no invented page/URL. `UNRESOLVED_REQUIREMENT`
+stays visibly unresolved in `unresolvedRequirementIds`.
+
+**Failure model.** Interpretation AI failure (`AI_UNAVAILABLE` /
+`PROVIDER_ERROR` / `SCHEMA_VALIDATION_FAILED`, one retry) → `ok:false` with that
+code, but `current` is still computed deterministically. Interpretation OK but
+no valid change → `UNSUPPORTED_DECISION` / `INSUFFICIENT_DECISION_DATA`, `current`
+returned. Recommendation-only failure → deterministic scenarios + diffs retained.
+
+**Files (new):** `src/lib/engine/decisionScenarioEngine.ts`,
+`src/lib/engine/__tests__/decisionScenarioEngine.test.ts`;
+`src/lib/ai/agents/decisionAgent.ts`,
+`src/lib/ai/agents/__tests__/decisionAgent.test.ts`;
+`src/lib/ai/scripts/liveDecisionAgent.ts`.
+**Files (changed):** `src/lib/ai/schemas/decision.ts`
+(+`decisionInterpretationSchema` with `constraints`, +`decisionConstraintSchema`,
++`decisionRecommendationSchema`), `src/lib/ai/schemas/index.ts` (registry),
+`src/lib/ai/schemas/__tests__/schemas.test.ts`, `src/lib/ai/agents/index.ts`
+(exports), `src/lib/model/ai.ts` (Phase 7 types incl. `DecisionConstraint`).
+
+**Checks:** `typecheck` ✓ · `lint` ✓ · `npm test` 350 pass / 0 fail (was 295,
++55) · `build` ✓. Not committed, not pushed. Phase 8 not started.
+
+**`LIVE_DECISION_AGENT_TEST`** — see the report; run with `AI_PROVIDER=gemini`,
+`AI_MODEL=gemini-3.6-flash`, synthetic demo data only, decision "زيادة عدد
+الحجاج المخدومين من 4200 إلى 5200 مع بقاء عدد القوى العاملة 180".
+
+---
+
 ## Phase 1 approval-gated items
 
 ### A — Arabic glossary — APPROVED (Phase 1)

@@ -156,6 +156,55 @@ export interface ScenarioComparisonResult {
   affectedStatuses: Record<string, ComplianceStatus>;
 }
 
+// --- Decision Intelligence Agent — Phase 7 (interpretation + recommendation) --
+//
+// NON-AUTHORITATIVE. The model turns natural language into requested operational
+// changes and, given ALREADY-COMPUTED deterministic scenarios, explains and
+// recommends among them. It never computes compliance / readiness / coverage /
+// a status, never invents a requirement / weight / penalty / integration, never
+// resolves an UNRESOLVED_REQUIREMENT.
+
+export interface DecisionRequestedChange {
+  /** Canonical company-profile field path — post-validated against the closed catalog. */
+  fieldPath: string;
+  toValue: string;
+  intentAr: string;
+}
+
+/** A user-stated "keep/same" value — a constraint, never a change or an assumption. */
+export interface DecisionConstraint {
+  fieldPath: string;
+  expectedValue: string;
+  intentAr: string;
+}
+
+export interface DecisionInterpretation {
+  decisionTitleAr: string;
+  decisionSummaryAr: string;
+  requestedChanges: DecisionRequestedChange[];
+  constraints: DecisionConstraint[];
+  assumptionsAr: string[];
+  ambiguitiesAr: string[];
+  missingInfoAr: string[];
+  interpretationConfidence: AIConfidence;
+  needsHumanReview: boolean;
+}
+
+export interface DecisionScenarioExplanation {
+  scenarioId: string;
+  whyChangedAr: string;
+}
+
+export interface DecisionRecommendation {
+  /** Post-validated against the computed scenario IDs, or null. */
+  recommendedScenarioId: string | null;
+  recommendationAr: string;
+  tradeoffsAr: string[];
+  assumptionsAr: string[];
+  scenarioExplanations: DecisionScenarioExplanation[];
+  needsHumanReview: boolean;
+}
+
 // --- Research Knowledge Agent (AI arch §17–§21) ---------------------------
 export type ResearchCorpusState = "CORPUS_PENDING" | "CORPUS_LOADED";
 
