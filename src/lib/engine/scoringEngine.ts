@@ -142,7 +142,13 @@ export interface WeightedContribution {
   weightedContribution: number; // points out of `weight`
 }
 
-/** Weighted overall readiness score — demo weighting per MVP_REQUIREMENTS.md. */
+/**
+ * LEGACY weighted average (the old demo "20% per criterion" model). This is NOT
+ * the Phase 3 compliance engine — the canonical, authoritative engine is
+ * `verificationEngine.ts` (Emtithal Readiness Index V1, unweighted). Retained
+ * only as the baseline for the deterministic decision-simulation fallback
+ * (`decisionEngine.ts`); do not reintroduce it into the compliance surfaces.
+ */
 export function computeOverallScore(
   items: { id: string; weight: number; score: number }[]
 ): { overallScore: number; contributions: WeightedContribution[] } {

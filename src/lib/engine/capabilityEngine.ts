@@ -8,7 +8,6 @@
 // =============================================================================
 
 import type { CapabilityIndicator, Requirement } from "@/lib/types";
-import { computeOverallScore } from "@/lib/engine/scoringEngine";
 
 export interface CompanyRawProfile {
   pilgrimsServed: number;
@@ -35,8 +34,9 @@ const RISK_PENALTY: Record<Requirement["riskLevel"], number> = {
  *                          pilgrims served.
  * Resource Readiness    = supervisors on hand vs. the recommended supervisor
  *                          count (1 per 35 staff).
- * Compliance Readiness  = the weighted overall compliance score from the
- *                          Compliance Engine (see scoringEngine.ts).
+ * Compliance Readiness  = the canonical Emtithal Readiness Index V1 passed in
+ *                          from the Verification Engine (Phase 3). This engine
+ *                          never recomputes it and never uses official weights.
  * Evidence Readiness    = share of evidence dimensions across all
  *                          requirements currently marked "found".
  * Risk Resilience       = 100 minus the average risk penalty across all
@@ -45,7 +45,9 @@ const RISK_PENALTY: Record<Requirement["riskLevel"], number> = {
  */
 export function computeCapabilityIndicators(
   profile: CompanyRawProfile,
-  requirements: Requirement[]
+  requirements: Requirement[],
+  /** Canonical Emtithal Readiness Index V1. `null` (nothing assessable) → shown as 0. */
+  complianceReadiness: number | null
 ): CapabilityIndicator[] {
   const targetRatio = 22; // pilgrims per staff member, MVP demo planning target
   const actualRatio = profile.pilgrimsServed / Math.max(profile.workforceSize, 1);
@@ -58,9 +60,7 @@ export function computeCapabilityIndicators(
     Math.round((profile.supervisors / Math.max(recommendedSupervisors, 1)) * 100)
   );
 
-  const { overallScore: complianceReadiness } = computeOverallScore(
-    requirements.map((r) => ({ id: r.id, weight: r.weight, score: r.score }))
-  );
+  const complianceReadinessValue = clamp(Math.round(complianceReadiness ?? 0));
 
   const allDimensions = requirements.flatMap((r) => r.evidenceDimensions);
   const foundCount = allDimensions.filter((d) => d.state === "found").length;
@@ -76,7 +76,7 @@ export function computeCapabilityIndicators(
   return [
     { key: "operational_capacity", labelAr: "الطاقة التشغيلية", value: operationalCapacity },
     { key: "resource_readiness", labelAr: "جاهزية الموارد", value: resourceReadiness },
-    { key: "compliance_readiness", labelAr: "جاهزية الامتثال", value: complianceReadiness },
+    { key: "compliance_readiness", labelAr: "جاهزية الامتثال", value: complianceReadinessValue },
     { key: "evidence_readiness", labelAr: "جاهزية الأدلة", value: evidenceReadiness },
     { key: "risk_resilience", labelAr: "مرونة المخاطر", value: riskResilience },
   ];

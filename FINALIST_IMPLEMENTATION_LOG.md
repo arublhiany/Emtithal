@@ -318,6 +318,84 @@ Deferred by instruction: assessment / verification / compliance outcomes
 (Phase 3 owns them); the onboarding UI (Phase 10 — no screen exists yet, all
 capture fields are UI-pending).
 
+### Phase 3 — Verification Engine + Readiness Index + Coverage + Critical Blockers — IMPLEMENTATION COMPLETE, AWAITING APPROVAL
+Not committed. No dependency installed. `AGENTS.md` / `CLAUDE.md` untouched. No AI. No visual redesign.
+
+New:
+- `src/lib/engine/verificationEngine.ts` — the authoritative deterministic engine.
+  Per requirement: (A) `UNRESOLVED_REQUIREMENT` → not scored, surfaced as
+  `regulatoryPending`, company not penalised; (B) applicability from Phase 2
+  (`NOT_APPLICABLE` / `INSUFFICIENT_DATA` → no score); (C) verification — only
+  VERIFIED target+actual (quantitative) or VERIFIED sub-requirements (qualitative)
+  yield COMPLIANT/PARTIALLY_COMPLIANT/NON_COMPLIANT; else PENDING_VERIFICATION /
+  INSUFFICIENT_DATA. Verified zero/negative target → controlled non-assessable
+  (`zeroTargetRequirements`). `verifyAll` also returns the Emtithal Readiness
+  Index V1 (unweighted mean of assessable eligible readiness; `null` when none),
+  Verification Coverage (assessable eligible / all eligible), `criticalBlockers`
+  (SPECIFIED + CRITICAL + NON_COMPLIANT only), `pending/insufficientDataWarnings`,
+  `regulatoryPendingCount/Ids`, `statusCounts`, `officialWeightsDisplayOnly`,
+  and `officialScoreComputed: false` (enforced — no Official Score ever).
+- `src/lib/data/demo/verificationInputs.ts` — minimum `DEMO_DATA` inputs to
+  exercise every status incl. one Critical Blocker (`CIV-03`). Qualitative
+  sub-requirement labels are verbatim from each requirement's matrix
+  "Verification Areas".
+- `src/lib/engine/complianceView.ts` — `getDemoVerificationRun()` /
+  `getDemoReadinessValue()`: the single place the app reads the canonical engine.
+- Tests: `src/lib/engine/__tests__/verificationEngine.test.ts`.
+
+Migrated to the canonical engine (data layer; no visual redesign):
+- `src/lib/hooks/useCompanyCompliance.ts` — **stopped calling `computeOverallScore`**;
+  `overallScore` is now the canonical Readiness Index; the 5 legacy experience
+  cards take status/score from the engine via legacy-ID alias; exposes
+  `readinessValue`, `verificationCoverage`, `criticalBlockers`, `statusCounts`,
+  `regulatoryPendingCount`.
+- `src/lib/engine/capabilityEngine.ts` — `compliance_readiness` indicator now
+  takes the canonical Readiness as a parameter (no `computeOverallScore`).
+- `src/lib/data/company.ts` — passes `getDemoReadinessValue()` to the capability engine.
+- `src/lib/data/ministryCompanies.ts` — demo portfolio row derives `overallScore`
+  / `status` / `criticalGaps` / `pendingVerification` from the canonical run
+  (no `computeOverallScore` / `computeComplianceStatus`).
+
+Copy corrections (minimal, no redesign):
+- Compliance page + dashboard: the "20% per criterion weighted average" text →
+  "unweighted Readiness Index V1; official weights are display-only; no Official Score".
+- Dashboard critical banner generalised (no longer names `CR-003`).
+- Requirement detail: weight row relabelled "الوزن الرسمي داخل المسار (بيانات تعريفية)".
+- Ministry Standards: disclaimer rewritten — official weights read-only,
+  display-only, not used in Readiness, no Official Score. (The screen already had
+  no weight-editing control.)
+- `src/lib/data/requirements.ts` — legacy seed `CR-003.criticalGate` flipped to
+  `false` (Phase 1: legacy criticalGate not carried; canonical HAJ-EXP-03 = REQUIRED).
+
+Legacy scoring removed from the compliance surfaces: the weighted
+`computeOverallScore` is no longer the compliance engine — it is retained only
+as the decision-simulation baseline (`decisionEngine.ts`, Phase 5/7), with a
+clarifying comment on both.
+
+Phase 3 correctness fixes (applied before checkpoint):
+- **Readiness precision** — `readinessRaw` per requirement (exact), aggregate is
+  the mean of RAW values, rounded only for `AggregateMetric.value`
+  (`rawValue` also exposed). A test proves intermediate rounding cannot change
+  the index (0.5/0.5/0.5/2.5 → 1, not 2).
+- **No company-wide compliance status from Readiness** — `ministryCompanies.ts`
+  no longer maps Readiness through `COMPLIANT_THRESHOLD`/`PARTIAL_THRESHOLD`;
+  `MinistryCompanySummary.status` is a neutral `"not_assessed"` (compat-only) and
+  the row exposes `readiness` / `verificationCoverage` / `criticalBlockerCount` /
+  `regulatoryPendingCount` / `applicabilityPendingCount`.
+- **Canonical KPIs no longer read legacy gap/risk data** — `getGaps()`/`getRisks()`
+  + their types are marked `legacyDemoOnly` / `@deprecated LEGACY_DEMO_ONLY`;
+  the dashboard KPIs now use `run.criticalBlockers` and `run.verificationGaps`
+  (new: eligible requirements verified PARTIALLY_COMPLIANT / NON_COMPLIANT, with
+  numeric gap or exact unsatisfied sub-requirements — no invented HIGH/MEDIUM
+  severity). Fixes the "blockers = 1 but critical-gaps KPI = 0" mismatch.
+- **Null readiness never shown as 0** — `ScoreRing` accepts `number | null` and
+  renders "—"; `Requirement.canonicalReadiness` + `RequirementCard` render "—"
+  for `null`; the hook label is "بيانات غير كافية لحساب مؤشر الجاهزية" when null.
+- **Applicability uncertainty is visible** — `VerificationRun.applicabilityPendingCount`
+  / `applicabilityPendingIds` (Phase 2 applicability `INSUFFICIENT_DATA`, not
+  regulatory-pending), distinct from `regulatoryPendingCount`. Coverage is not
+  penalised for it. Demo: `["HAJ-NUSUK-01"]`.
+
 ---
 
 ## Phase 1 approval-gated items

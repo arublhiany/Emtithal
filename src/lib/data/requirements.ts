@@ -121,7 +121,10 @@ const REQUIREMENT_SEEDS: RequirementSeed[] = [
     descriptionAr:
       "تقييم مدى تنفيذ الشركة وتوثيقها لآليات وأنشطة تدعم حماية حقوق ضيف الرحمن والتوعية بها.",
     weight: 20,
-    criticalGate: true,
+    // Legacy MVP flagged this as a critical gate. The Finalist model does NOT
+    // carry that (Phase 1): the canonical HAJ-EXP-03 internalCriticality is
+    // REQUIRED, not CRITICAL. Kept false so the legacy screens stay consistent.
+    criticalGate: false,
     effectiveDate: "01-01-1447هـ",
     lastUpdated: "01-01-1447هـ",
     lastEvaluation: "قبل 9 أيام",
@@ -134,7 +137,7 @@ const REQUIREMENT_SEEDS: RequirementSeed[] = [
       completeness: "لا يوجد ملف تقييم نهائي جاهز للمراجعة.",
     }),
     gapExplanationAr:
-      "هذا معيار حرج (Critical Gate). الأدلة الحالية لا تغطي متطلبات القياس والتوثيق الكافية لإثبات حفظ حقوق ضيف الرحمن، وهو ما يستدعي إجراءً فوريًا.",
+      "الأدلة الحالية لا تغطي متطلبات القياس والتوثيق الكافية لإثبات حفظ حقوق ضيف الرحمن، وهو ما يستدعي إجراءً تصحيحيًا.",
     recommendedActionAr:
       "رفع سجلات تنفيذ كاملة لأنشطة التوعية بالحقوق مع مؤشر قياس لعدد المستفيدين، وطلب مراجعة بشرية عاجلة.",
     versionHistory: [
@@ -143,7 +146,7 @@ const REQUIREMENT_SEEDS: RequirementSeed[] = [
         effectiveFrom: "01-01-1447هـ",
         weight: 20,
         status: "active",
-        changeNote: "الإصدار الأول من المعيار ضمن نطاق النموذج التجريبي — معيار حرج.",
+        changeNote: "الإصدار الأول من المعيار ضمن نطاق النموذج التجريبي.",
       },
     ],
   },

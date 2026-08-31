@@ -75,12 +75,18 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
 }
 
 function DetailedCompanyView() {
-  const { requirements, gaps, profile, overallScore, readiness } = useCompanyCompliance();
+  const { requirements, gaps, profile, readinessValue, readinessAvailable, readiness } =
+    useCompanyCompliance();
 
   return (
     <div className="space-y-6">
       <Card className="flex flex-wrap items-center gap-6">
-        <ScoreRing score={overallScore} size={100} strokeWidth={10} label="من 100" />
+        <ScoreRing
+          score={readinessAvailable ? readinessValue : null}
+          size={100}
+          strokeWidth={10}
+          label="مؤشر جاهزية امتثال"
+        />
         <div className="flex-1 min-w-[200px]">
           <p className="text-sm font-semibold text-[var(--color-ink)]">{readiness.labelAr}</p>
           <p className="text-xs text-[var(--color-ink-muted)] mt-1">

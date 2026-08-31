@@ -125,6 +125,14 @@ export interface Requirement {
   evidenceIds: string[];
   confidence: ConfidenceLevel;
   confidenceReasonAr: string;
+
+  /**
+   * Canonical Verification Engine readiness (Phase 3), set when the card is
+   * adapted from a canonical result. `null` = not assessable
+   * (PENDING_VERIFICATION / INSUFFICIENT_DATA / regulatory-pending) — the UI
+   * must render "—" / "بيانات غير كافية", NEVER 0. `undefined` = not adapted.
+   */
+  canonicalReadiness?: number | null;
 }
 
 // -----------------------------------------------------------------------------
@@ -162,7 +170,12 @@ export interface Evidence {
 }
 
 // -----------------------------------------------------------------------------
-// Gaps & Risks
+// Gaps & Risks — LEGACY_DEMO_ONLY
+//
+// These hand-authored demo records feed only the legacy `/company/gaps` and
+// `/ministry/risks` pages, kept for visual compatibility until Phase 11. They
+// MUST NOT drive canonical dashboard KPIs, readiness, status, or blockers — the
+// Verification Engine (`verificationEngine.ts`) is authoritative for those.
 // -----------------------------------------------------------------------------
 
 export interface Gap {
@@ -181,6 +194,8 @@ export interface Gap {
   priority: ActionPriority;
   suggestedActionAr: string;
   detectedAtLabel: string;
+  /** Always true — this record is demo-only and never a canonical fact. */
+  legacyDemoOnly: true;
 }
 
 export interface Risk {
@@ -194,6 +209,8 @@ export interface Risk {
   level: RiskLevel; // combined risk level shown on the matrix
   descriptionAr: string;
   methodologyNoteAr: string;
+  /** Always true — LEGACY_DEMO_ONLY, never a canonical fact. */
+  legacyDemoOnly: true;
 }
 
 // -----------------------------------------------------------------------------
@@ -341,13 +358,32 @@ export interface CompanyProfile {
 export interface MinistryCompanySummary {
   id: string;
   nameAr: string;
+  /**
+   * LEGACY-COMPAT display number for the current portfolio table. For the demo
+   * company this is the canonical Readiness Index (floored to 0 only when the
+   * type forbids null). Prefer `readiness` below. Removed at the Phase 10/11
+   * government-UI migration.
+   */
   overallScore: number;
+  /**
+   * COMPATIBILITY-ONLY. The Emtithal Readiness Index is NOT a company-wide
+   * regulatory compliance status and no approved rule maps it to one — so this
+   * is a neutral `"not_assessed"` for canonically-derived rows. Removed at the
+   * Phase 10/11 government-UI migration.
+   */
   status: LegacyComplianceStatus;
   riskLevel: RiskLevel;
   criticalGaps: number;
   pendingVerification: number;
   correctiveActionsOpen: number;
   lastAssessmentLabel: string;
+
+  // --- Canonical facts (Phase 3), populated for canonically-derived rows -----
+  readiness?: number | null;
+  verificationCoverage?: number | null;
+  criticalBlockerCount?: number;
+  regulatoryPendingCount?: number;
+  applicabilityPendingCount?: number;
 }
 
 // -----------------------------------------------------------------------------

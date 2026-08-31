@@ -10,6 +10,13 @@ export function RequirementCard({
   requirement: Requirement;
   compact?: boolean;
 }) {
+  // Canonical readiness is authoritative when present. `null` = not assessable
+  // (PENDING / INSUFFICIENT) → render "—", never 0.
+  const canonical = requirement.canonicalReadiness;
+  const hasCanonical = canonical !== undefined;
+  const readinessAvailable = hasCanonical ? canonical !== null : true;
+  const shownValue = hasCanonical ? canonical : requirement.score;
+
   return (
     <Link
       href={`/company/compliance/${requirement.id}`}
@@ -28,11 +35,11 @@ export function RequirementCard({
           </h3>
         </div>
         <span className="text-2xl font-bold tabular-nums text-[var(--color-ink)] shrink-0">
-          {requirement.score}
+          {readinessAvailable ? shownValue : "—"}
         </span>
       </div>
 
-      <ProgressBar value={requirement.score} />
+      <ProgressBar value={readinessAvailable ? (shownValue ?? 0) : 0} />
 
       <div className="flex flex-wrap items-center gap-1.5">
         <StatusBadge status={requirement.complianceStatus} size="sm" />
@@ -47,7 +54,7 @@ export function RequirementCard({
 
       <div className="flex items-center justify-between pt-1 border-t border-[var(--color-border)]">
         <span className="text-[11px] text-[var(--color-ink-faint)]">
-          الوزن: {requirement.weight}%
+          الوزن الرسمي: {requirement.weight}%
         </span>
         <DemoConfigBadge />
       </div>

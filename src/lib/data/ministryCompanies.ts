@@ -7,40 +7,42 @@
 
 import type { MinistryCompanySummary } from "@/lib/types";
 import { getCompanyProfile } from "@/lib/data/company";
-import { getRequirements } from "@/lib/data/requirements";
-import { computeOverallScore, computeComplianceStatus } from "@/lib/engine/scoringEngine";
-import { getGaps } from "@/lib/data/gaps";
 import { getSeedActions } from "@/lib/data/actions";
+import { getDemoVerificationRun } from "@/lib/engine/complianceView";
 
+/**
+ * The demo company's portfolio row exposes the canonical Verification Engine
+ * facts (Readiness Index V1, Verification Coverage, blocker / regulatory /
+ * applicability-pending counts). It does NOT infer a company-wide regulatory
+ * compliance status from Readiness — no approved rule exists for that, so
+ * `status` stays a neutral `"not_assessed"` (compatibility-only), and no
+ * Official Score is computed.
+ */
 function getDemoCompanySummary(): MinistryCompanySummary {
   const profile = getCompanyProfile();
-  const requirements = getRequirements();
-  const { overallScore } = computeOverallScore(
-    requirements.map((r) => ({ id: r.id, weight: r.weight, score: r.score }))
-  );
-  const dims = requirements.flatMap((r) => r.evidenceDimensions);
-  const status = computeComplianceStatus(overallScore, dims.length ? dims : []);
-  const criticalGaps = getGaps().filter((g) => g.severity === "critical").length;
-  const pendingVerification = requirements.filter(
-    (r) => r.evidenceStatus === "pending_verification" || r.evidenceStatus === "needs_review"
-  ).length;
-  const correctiveActionsOpen = getSeedActions().filter((a) => a.status !== "completed").length;
-  const worstRisk = requirements.some((r) => r.riskLevel === "critical")
-    ? "critical"
-    : requirements.some((r) => r.riskLevel === "high")
-      ? "high"
-      : "medium";
+  const run = getDemoVerificationRun();
+  const readiness = run.readiness.value;
 
   return {
     id: profile.id,
     nameAr: profile.nameAr,
-    overallScore,
-    status,
-    riskLevel: worstRisk,
-    criticalGaps,
-    pendingVerification,
-    correctiveActionsOpen,
+    // Legacy-compat display number only (see type doc). Prefer `readiness`.
+    overallScore: readiness ?? 0,
+    // No company-wide compliance judgment is derived from Readiness.
+    status: "not_assessed",
+    // Only reflects the presence of a canonical Critical Blocker — not an
+    // invented risk tier.
+    riskLevel: run.criticalBlockers.length > 0 ? "critical" : "none",
+    criticalGaps: run.criticalBlockers.length,
+    pendingVerification: run.pendingWarnings.length,
+    correctiveActionsOpen: getSeedActions().filter((a) => a.status !== "completed").length,
     lastAssessmentLabel: "اليوم",
+
+    readiness,
+    verificationCoverage: run.coverage.value,
+    criticalBlockerCount: run.criticalBlockers.length,
+    regulatoryPendingCount: run.regulatoryPendingCount,
+    applicabilityPendingCount: run.applicabilityPendingCount,
   };
 }
 

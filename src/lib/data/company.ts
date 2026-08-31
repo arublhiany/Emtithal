@@ -6,6 +6,7 @@
 import type { CompanyProfile } from "@/lib/types";
 import { getRequirements } from "@/lib/data/requirements";
 import { computeCapabilityIndicators } from "@/lib/engine/capabilityEngine";
+import { getDemoReadinessValue } from "@/lib/engine/complianceView";
 
 export const DEMO_COMPANY_ID = "company-alnoor";
 
@@ -26,6 +27,10 @@ export function getCompanyProfile(): CompanyProfile {
     city: "مكة المكرمة",
     ...RAW_PROFILE,
     seasonLabel: "موسم 1447هـ",
-    capabilityIndicators: computeCapabilityIndicators(RAW_PROFILE, requirements),
+    capabilityIndicators: computeCapabilityIndicators(
+      RAW_PROFILE,
+      requirements,
+      getDemoReadinessValue(),
+    ),
   };
 }

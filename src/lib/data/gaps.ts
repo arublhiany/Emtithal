@@ -1,13 +1,16 @@
 // =============================================================================
-// Gap analysis — derived from requirements scoring below the compliant
-// threshold. Text is authored to stay consistent with each requirement's
-// evidence-dimension findings.
+// LEGACY_DEMO_ONLY — hand-authored gap narrative for the legacy `/company/gaps`
+// page, kept for visual compatibility until Phase 11. NOT a canonical fact and
+// NEVER used for canonical dashboard KPIs, readiness, status, or blockers — the
+// Verification Engine is authoritative (see `verificationEngine.ts` →
+// `VerificationRun.verificationGaps` / `criticalBlockers`).
 // =============================================================================
 
 import type { Gap } from "@/lib/types";
 import { DEMO_COMPANY_ID } from "@/lib/data/company";
 import { getRequirements } from "@/lib/data/requirements";
 
+/** @deprecated LEGACY_DEMO_ONLY — see file header. */
 export function getGaps(): Gap[] {
   const req = (id: string) => getRequirements().find((r) => r.id === id)!;
 
@@ -28,6 +31,7 @@ export function getGaps(): Gap[] {
       priority: "medium",
       suggestedActionAr: req("CR-002").recommendedActionAr,
       detectedAtLabel: "قبل 5 أيام",
+      legacyDemoOnly: true,
     },
     {
       id: "GAP-003",
@@ -45,6 +49,7 @@ export function getGaps(): Gap[] {
       priority: "critical",
       suggestedActionAr: req("CR-003").recommendedActionAr,
       detectedAtLabel: "قبل 9 أيام",
+      legacyDemoOnly: true,
     },
     {
       id: "GAP-004",
@@ -62,6 +67,7 @@ export function getGaps(): Gap[] {
       priority: "high",
       suggestedActionAr: req("CR-004").recommendedActionAr,
       detectedAtLabel: "قبل يوم واحد",
+      legacyDemoOnly: true,
     },
   ];
 

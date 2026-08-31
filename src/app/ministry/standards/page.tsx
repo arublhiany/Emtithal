@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { getRequirements } from "@/lib/data/requirements";
-import { DEMO_WEIGHT_DISCLAIMER } from "@/lib/data/requirements";
 import { PageHeader, Card, SectionHeader } from "@/components/ui/Card";
 import { DemoConfigBadge } from "@/components/ui/Badge";
 import type { StandardLifecycleStatus } from "@/lib/types";
@@ -45,9 +44,9 @@ export default function StandardsPage() {
       />
 
       <div className="rounded-xl border border-[var(--color-accent)]/30 bg-[var(--color-accent-tint)] px-4 py-3 text-xs text-[var(--color-accent-dark)] leading-relaxed">
-        {DEMO_WEIGHT_DISCLAIMER} — الأوزان الحالية (20% لكل معيار) تكوين تجريبي للعرض فقط.
-        التعديل على الأوزان في هذا العرض التجريبي محفوظ لهذه الجلسة فقط ولا يُعاد حساب نتائج
-        الامتثال المعروضة تلقائيًا في نسخة الهاكاثون.
+        الأوزان الرسمية للمعايير تُعرض للقراءة فقط كبيانات تعريفية من المصدر الرسمي، ولا تُستخدم
+        في حساب مؤشر جاهزية امتثال (V1) — وهو متوسط غير مرجّح. لا يمكن تعديل الأوزان الرسمية من
+        هذه الشاشة، ولا تُحسب أي درجة رسمية.
       </div>
 
       {savedNote && (

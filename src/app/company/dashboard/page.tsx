@@ -22,13 +22,14 @@ export default function CompanyDashboardPage() {
   const { state, markAlertRead } = useDemoStore();
   const {
     requirements,
-    gaps,
     profile,
-    overallScore,
+    readinessValue,
+    readinessAvailable,
     readiness,
     hasUnresolvedCriticalGate,
-    criticalGaps,
-    highRisks,
+    criticalBlockerCount,
+    verificationGaps,
+    regulatoryPendingCount,
   } = useCompanyCompliance();
 
   const pendingEvidence = state.evidence.filter(
@@ -60,11 +61,11 @@ export default function CompanyDashboardPage() {
           <span className="text-lg">🚨</span>
           <div>
             <p className="text-sm font-semibold text-[var(--color-status-noncompliant)]">
-              يوجد معيار حرج (Critical Gate) غير محلول
+              عائق حرج قائم — متطلب حرج بحالة غير ملتزم
             </p>
             <p className="text-xs text-[var(--color-ink-muted)] mt-1">
-              نتيجة الجاهزية الإجمالية لا يمكن أن تُخفي فجوة حرجة قائمة — راجع معيار CR-003 قبل
-              أي إجراء آخر.
+              مؤشر جاهزية امتثال العام لا يُخفي متطلبًا حرجًا غير مستوفٍ. راجع المتطلبات الحرجة
+              قبل أي إجراء آخر.
             </p>
           </div>
         </div>
@@ -73,10 +74,10 @@ export default function CompanyDashboardPage() {
       {/* Top row: overall score + KPIs */}
       <div className="grid lg:grid-cols-4 gap-4">
         <div className="card p-6 flex items-center gap-5 lg:col-span-1">
-          <ScoreRing score={overallScore} label="من 100" />
+          <ScoreRing score={readinessAvailable ? readinessValue : null} label="مؤشر جاهزية امتثال" />
           <div>
             <p className="text-xs text-[var(--color-ink-muted)] mb-1">
-              نسبة الامتثال الإجمالية
+              مؤشر جاهزية امتثال (V1)
             </p>
             <p className={`text-sm font-semibold ${READINESS_TONE[readiness.tone]}`}>
               {readiness.labelAr}
@@ -86,16 +87,22 @@ export default function CompanyDashboardPage() {
 
         <div className="lg:col-span-3 grid sm:grid-cols-3 gap-4">
           <KPICard
-            label="الفجوات المفتوحة"
-            value={gaps.length}
+            label="فجوات التحقق"
+            value={verificationGaps.length}
             icon="🎯"
             toneClass="text-[var(--color-status-partial)]"
           />
           <KPICard
-            label="المخاطر الحرجة والمرتفعة"
-            value={highRisks.length}
-            icon="⚠️"
+            label="المعوّقات الحرجة"
+            value={criticalBlockerCount}
             toneClass="text-[var(--color-status-noncompliant)]"
+            icon="🚨"
+          />
+          <KPICard
+            label="بانتظار تحقق تنظيمي"
+            value={regulatoryPendingCount}
+            icon="⏳"
+            toneClass="text-[var(--color-status-review)]"
           />
           <KPICard
             label="الأدلة بحاجة متابعة"
@@ -107,12 +114,6 @@ export default function CompanyDashboardPage() {
             label="الإجراءات التصحيحية الجارية"
             value={openActions}
             icon="🛠️"
-          />
-          <KPICard
-            label="الفجوات الحرجة"
-            value={criticalGaps.length}
-            toneClass="text-[var(--color-status-noncompliant)]"
-            icon="🚨"
           />
           <KPICard
             label="عدد المعايير المقيّمة"
@@ -130,7 +131,7 @@ export default function CompanyDashboardPage() {
               نظرة عامة على المعايير الخمسة
             </h2>
             <p className="text-sm text-[var(--color-ink-muted)] mt-0.5">
-              كل معيار يمثل 20% من نموذج التقييم التجريبي.
+              الحالة والجاهزية محسوبة بمحرك التحقق الحتمي. الأوزان الرسمية بيانات تعريفية فقط.
             </p>
           </div>
           <Link

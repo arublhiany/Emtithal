@@ -179,7 +179,7 @@ export default function RequirementDetailPage({
               <Row label="تاريخ السريان" value={requirement.effectiveDate} />
               <Row label="آخر تحديث" value={requirement.lastUpdated} />
               <Row label="طريقة التقييم" value="هجينة (أدلة + ذكاء اصطناعي + قواعد حتمية)" />
-              <Row label="الوزن" value={`${requirement.weight}%`} />
+              <Row label="الوزن الرسمي داخل المسار (بيانات تعريفية)" value={`${requirement.weight}%`} />
             </dl>
             <div className="mt-3">
               <DemoConfigBadge />

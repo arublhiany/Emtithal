@@ -42,6 +42,11 @@ import type {
 import { computeOverallScore } from "@/lib/engine/scoringEngine";
 import { interpretDecision, type DecisionAgentMapping } from "@/lib/agent/decisionAgent";
 
+// NOTE: `computeOverallScore` here is the LEGACY weighted baseline used only for
+// the decision-simulation before/after projection. It is NOT the Phase 3
+// compliance engine (`verificationEngine.ts`). Migrating decision simulation to
+// the canonical engine is Phase 5/7 work.
+
 const IMPACT_SCALE = 0.7; // demo dampening factor so a 20% operational change ≈ a moderate score shift
 
 function clampScore(n: number): number {
