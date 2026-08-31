@@ -32,8 +32,16 @@ export interface ApplicabilityResult {
   reason: string;
   /** The applicability rule / expression that was evaluated. */
   ruleEvaluated: string;
-  /** Company profile field paths the decision consulted. */
+  /** Company profile field paths the decision consulted (present or absent). */
   companyFieldsUsed: string[];
+  /**
+   * ONLY the company profile inputs that are actually absent AND required to
+   * resolve applicability. Distinct from `companyFieldsUsed`. Always `[]` for
+   * APPLICABLE / NOT_APPLICABLE; for INSUFFICIENT_DATA it is the exact set of
+   * undeclared inputs that block a decision (never a conflict, never a field
+   * that is present).
+   */
+  missingCompanyFields: string[];
   /**
    * The requirement's regulatory resolution, carried through unchanged. Phase 2
    * never resolves regulatory truth — `"UNRESOLVED_REQUIREMENT"` stays so.
@@ -60,6 +68,7 @@ function result(
   ruleEvaluated: string,
   companyFieldsUsed: string[],
   targetPopulationBasis: string | null = null,
+  missingCompanyFields: string[] = [],
 ): ApplicabilityResult {
   return {
     requirementId: requirement.id,
@@ -67,6 +76,7 @@ function result(
     reason,
     ruleEvaluated,
     companyFieldsUsed,
+    missingCompanyFields: outcome === "INSUFFICIENT_DATA" ? missingCompanyFields : [],
     regulatoryResolution: requirement.resolution,
     regulatoryUnresolvedNote: unresolvedNote(requirement),
     targetPopulationBasis,
@@ -113,6 +123,8 @@ export function evaluateApplicability(
       `Scope membership for ${rule.scopeKey} is not declared. Not inferred.`,
       ruleEvaluated,
       fields,
+      null,
+      fields,
     );
   }
 
@@ -153,6 +165,8 @@ export function evaluateApplicability(
       "companyResponsibleForCamp is not declared. Not inferred.",
       ruleEvaluated,
       fields,
+      null,
+      fields,
     );
   }
 
@@ -186,6 +200,8 @@ export function evaluateApplicability(
           "Catering responsibility is not declared. Not inferred.",
           "NARRATIVE(catering responsibility)",
           fields,
+          null,
+          fields,
         );
       }
 
@@ -206,6 +222,9 @@ export function evaluateApplicability(
             "Conflict: contractsExternalServiceProviders == false but provider records exist. Not resolved.",
             "NARRATIVE(contracts external service providers)",
             fields,
+            null,
+            // A conflict, not an absence — no field is "missing".
+            [],
           );
         }
         if (declared === false) {
@@ -233,6 +252,10 @@ export function evaluateApplicability(
           "Whether the company contracts external service providers is not declared, and no provider records exist. Not inferred.",
           "NARRATIVE(contracts external service providers)",
           fields,
+          null,
+          // Only the undeclared input blocks the decision; an empty
+          // serviceProviders[] is a declared state, not an absent field.
+          ["declaredFacts.contractsExternalServiceProviders"],
         );
       }
 
@@ -255,6 +278,8 @@ export function evaluateApplicability(
           "No explicit Nusuk applicable-person roster/count is declared, and the matrix applicability rule is prose-only. Not inferred.",
           "NARRATIVE(Nusuk applicable persons) — declared roster/count required",
           fields,
+          null,
+          fields,
         );
       }
 
@@ -276,6 +301,8 @@ export function evaluateApplicability(
           "INSUFFICIENT_DATA",
           "The subset of workers whose roles require direct contact with pilgrims / Umrah performers is not declared. Whole-workforce is NOT assumed.",
           "NARRATIVE(direct-contact workers only)",
+          fields,
+          null,
           fields,
         );
       }

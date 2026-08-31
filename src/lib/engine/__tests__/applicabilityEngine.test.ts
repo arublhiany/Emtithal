@@ -170,6 +170,64 @@ test("MOH-01: missing direct-contact worker population → INSUFFICIENT_DATA", (
   assert.equal(evaluateApplicability(req("MOH-01"), emptyProfile()).outcome, "INSUFFICIENT_DATA");
 });
 
+// -- missingCompanyFields: EXACT absent inputs, not "fields consulted" -------
+
+test("missingCompanyFields names only the exact absent required input (MOH-01)", () => {
+  const r = evaluateApplicability(req("MOH-01"), emptyProfile());
+  assert.equal(r.outcome, "INSUFFICIENT_DATA");
+  assert.deepEqual(r.missingCompanyFields, ["directContactWorkers.count"]);
+});
+
+test("a present field is never labelled missing (MOH-01 subset declared → APPLICABLE, [])", () => {
+  const withSubset = withDraft({ directContactWorkers: { count: 45, sourceAr: "س" } });
+  const r = evaluateApplicability(req("MOH-01"), withSubset);
+  assert.equal(r.outcome, "APPLICABLE");
+  assert.deepEqual(r.missingCompanyFields, []);
+});
+
+test("APPLICABLE and NOT_APPLICABLE always have missingCompanyFields = []", () => {
+  const inScope = withDraft({ declaredFacts: { experienceTrackScopeDeclared: true } });
+  const outScope = withDraft({ declaredFacts: { experienceTrackScopeDeclared: false } });
+  for (const id of EXP_IDS) {
+    assert.deepEqual(evaluateApplicability(req(id), inScope).missingCompanyFields, [], `${id} APPLICABLE`);
+    assert.deepEqual(evaluateApplicability(req(id), outScope).missingCompanyFields, [], `${id} NOT_APPLICABLE`);
+  }
+  // whole demo set: no APPLICABLE / NOT_APPLICABLE result carries a missing field
+  for (const r of evaluateAllApplicability(REQS, DEMO_COMPANY_PROFILE)) {
+    if (r.outcome !== "INSUFFICIENT_DATA") assert.deepEqual(r.missingCompanyFields, [], r.requirementId);
+  }
+});
+
+test("when one of several rule inputs is absent, only the absent one is returned (HAJ-PROVIDERS-01)", () => {
+  // emptyProfile → contractsExternalServiceProviders undeclared AND serviceProviders = []
+  const r = evaluateApplicability(req("HAJ-PROVIDERS-01"), emptyProfile());
+  assert.equal(r.outcome, "INSUFFICIENT_DATA");
+  // the rule consulted two inputs …
+  assert.deepEqual(r.companyFieldsUsed, [
+    "declaredFacts.contractsExternalServiceProviders",
+    "serviceProviders[]",
+  ]);
+  // … but only the genuinely-absent one is reported missing (an empty
+  // serviceProviders[] is a declared state, not an absence)
+  assert.deepEqual(r.missingCompanyFields, ["declaredFacts.contractsExternalServiceProviders"]);
+});
+
+test("each undeclared single-input rule reports exactly that input", () => {
+  const cases: [string, string][] = [
+    ["HAJ-EXP-01", "declaredFacts.experienceTrackScopeDeclared"],
+    ["HAJ-CAMP-01", "declaredFacts.companyResponsibleForCamp"],
+    ["CIV-03", "declaredFacts.companyResponsibleForCamp"],
+    ["HAJ-CATERING-01", "declaredFacts.providesOrEnsuresCatering"],
+    ["HAJ-NUSUK-01", "nusukApplicablePersons.count"],
+    ["MOH-01", "directContactWorkers.count"],
+  ];
+  for (const [id, field] of cases) {
+    const r = evaluateApplicability(req(id), emptyProfile());
+    assert.equal(r.outcome, "INSUFFICIENT_DATA", id);
+    assert.deepEqual(r.missingCompanyFields, [field], id);
+  }
+});
+
 // -- NOT_APPLICABLE requirements are identifiable for downstream exclusion ---
 
 test("NOT_APPLICABLE requirements are collectable for Phase 3 exclusion", () => {

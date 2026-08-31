@@ -63,13 +63,14 @@ export function getRequirementsMissingOfficialSource(): RegulatoryRequirement[] 
 }
 
 /**
- * Records whose verified official source lacks a precise page/section locator
- * (a page number is never invented — an "officialSource locator" note is kept
- * in `unresolved` instead).
+ * Records whose verified official source has an explicit `locatorStatus` of
+ * `INCOMPLETE` (a page number is never invented — an "officialSource locator"
+ * note is kept in `unresolved` instead). Read from the explicit canonical field,
+ * not inferred from `locatorNote`.
  */
 export function getRequirementsMissingSourceLocator(): RegulatoryRequirement[] {
   return getRegulatoryRequirements().filter(
-    (r) => r.officialSource !== null && r.officialSource.locatorNote === null,
+    (r) => r.officialSource !== null && r.officialSource.locatorStatus === "INCOMPLETE",
   );
 }
 

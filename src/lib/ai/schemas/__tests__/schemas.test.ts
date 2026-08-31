@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import type {
   DecisionObject,
   EvidenceAgentOutput,
+  RegulatoryAgentAnswer,
   RegulatoryAgentOutput,
   ResearchQueryResult,
   Scenario,
@@ -18,6 +19,7 @@ import {
   AI_OUTPUT_SCHEMAS,
   decisionObjectSchema,
   evidenceAgentOutputSchema,
+  regulatoryAgentAnswerSchema,
   regulatoryAgentOutputSchema,
   researchQueryResultSchema,
   scenarioComparisonResultSchema,
@@ -26,6 +28,7 @@ import {
 import type {
   DecisionObjectParsed,
   EvidenceAgentOutputParsed,
+  RegulatoryAgentAnswerParsed,
   RegulatoryAgentOutputParsed,
   ResearchQueryResultParsed,
   ScenarioComparisonResultParsed,
@@ -35,6 +38,7 @@ import type {
 // -- compile-time type parity ------------------------------------------------
 // Each parsed type must be assignable to its Phase 1 canonical type.
 const _reg: RegulatoryAgentOutput = {} as RegulatoryAgentOutputParsed;
+const _rga: RegulatoryAgentAnswer = {} as RegulatoryAgentAnswerParsed;
 const _evi: EvidenceAgentOutput = {} as EvidenceAgentOutputParsed;
 const _dec: DecisionObject = {} as DecisionObjectParsed;
 const _sce: Scenario = {} as ScenarioParsed;
@@ -42,7 +46,7 @@ const _res: ResearchQueryResult = {} as ResearchQueryResultParsed;
 // ScenarioComparisonResult minus the guardrail-forbidden `affectedStatuses`.
 const _cmp: Omit<ScenarioComparisonResult, "affectedStatuses"> =
   {} as ScenarioComparisonResultParsed;
-void [_reg, _evi, _dec, _sce, _res, _cmp];
+void [_reg, _rga, _evi, _dec, _sce, _res, _cmp];
 
 // -- runtime validity + strictness ----------------------------------------
 
@@ -57,6 +61,56 @@ test("regulatoryAgentOutputSchema: valid parses; unknown keys rejected", () => {
   };
   assert.equal(regulatoryAgentOutputSchema.safeParse(valid).success, true);
   assert.equal(regulatoryAgentOutputSchema.safeParse({ ...valid, complianceStatus: "COMPLIANT" }).success, false);
+});
+
+test("regulatoryAgentAnswerSchema (Phase 5): valid parses; no confidence field; unknown keys rejected", () => {
+  const valid = {
+    answerAr: "شرح موجز",
+    requirementIds: ["HAJ-EXP-05"],
+    authorityId: "MOHU" as string | null,
+    missingInformation: [],
+    applicabilityExplanationAr: null as string | null,
+  };
+  assert.equal(regulatoryAgentAnswerSchema.safeParse(valid).success, true);
+  // confidence is deterministic + code-owned — the model may not supply one
+  assert.equal(
+    regulatoryAgentAnswerSchema.safeParse({ ...valid, confidence: "HIGH" }).success,
+    false,
+  );
+  assert.equal(
+    regulatoryAgentAnswerSchema.safeParse({ ...valid, complianceStatus: "COMPLIANT" }).success,
+    false,
+  );
+  assert.equal(
+    regulatoryAgentAnswerSchema.safeParse({ ...valid, officialWeight: 20 }).success,
+    false,
+  );
+});
+
+test("regulatoryAgentAnswerSchema (Phase 5): only harmless explanatory-list shape variance is tolerated", () => {
+  const base = {
+    answerAr: "شرح",
+    requirementIds: ["HAJ-EXP-05"],
+    authorityId: null as string | null,
+    applicabilityExplanationAr: null as string | null,
+  };
+  // missingInformation as a lone string → one-element array (explanatory list only)
+  const p1 = regulatoryAgentAnswerSchema.safeParse({
+    ...base,
+    missingInformation: "النص الكامل للمتطلب",
+  });
+  assert.equal(
+    p1.success && JSON.stringify(p1.data.missingInformation),
+    JSON.stringify(["النص الكامل للمتطلب"]),
+  );
+  // null missingInformation → []
+  const p2 = regulatoryAgentAnswerSchema.safeParse({ ...base, missingInformation: null });
+  assert.equal(p2.success && JSON.stringify(p2.data.missingInformation), "[]");
+  // a number is NOT coerced into meaning — still rejected
+  assert.equal(
+    regulatoryAgentAnswerSchema.safeParse({ ...base, missingInformation: 3 }).success,
+    false,
+  );
 });
 
 test("evidenceAgentOutputSchema: valid parses; strict", () => {
@@ -155,6 +209,7 @@ test("the schema registry exposes every canonical agent output schema", () => {
   assert.deepEqual(Object.keys(AI_OUTPUT_SCHEMAS).sort(), [
     "decisionObject",
     "evidenceAgentOutput",
+    "regulatoryAgentAnswer",
     "regulatoryAgentOutput",
     "researchQueryResult",
     "scenario",

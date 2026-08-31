@@ -60,6 +60,7 @@ function applic(outcome: ApplicabilityOutcome): ApplicabilityResult {
     reason: "r",
     ruleEvaluated: "r",
     companyFieldsUsed: [],
+    missingCompanyFields: [],
     regulatoryResolution: "SPECIFIED",
     regulatoryUnresolvedNote: null,
     targetPopulationBasis: null,

@@ -538,6 +538,171 @@ connectivity test.
 
 ---
 
+### Phase 5 — Regulatory Intelligence Agent — IMPLEMENTATION COMPLETE, AWAITING APPROVAL
+Not committed. `AGENTS.md` / `CLAUDE.md` untouched. No UI/Figma change. No new
+dependency. No regulatory fact / weight / target / penalty added. The Phase 4
+Anthropic compatibility fixes remain preserved.
+
+**Role.** `src/lib/ai/agents/regulatoryAgent.ts` retrieves the correct approved
+requirement(s) and asks the LLM ONLY to interpret / explain them. It never
+determines compliance, applicability outcome, readiness, coverage, blockers,
+weights, targets or integration state — the deterministic engines stay
+authoritative; the agent may explain a deterministic result, never replace one.
+
+**API (server-side).**
+- `answerRegulatoryQuestion(query, opts?)` — free-text / id question.
+- `explainRequirement(idOrAlias, opts?)` — one approved requirement.
+- `explainApplicability({ requirementIdOrAlias, profile }, opts?)` — runs the
+  deterministic applicability engine FIRST, hands its outcome to the LLM as
+  immutable context, asks only for an explanation.
+- `opts.client` injects an `AIClient` for tests; default is the shared
+  `getAIClient()`. One shared pipeline — no duplicate provider logic.
+
+**Deterministic retrieval before generation** (`regulatoryRetrieval.ts`, no LLM):
+resolves a query over canonical fields only — canonical id, legacy alias
+(`resolveRequirementId`), verbatim canonical title / long source alias, then
+token overlap on title + aliases + domain + track + verification areas, with an
+optional authority filter. Outcomes: `MATCH` (exactly one → LLM is called),
+`AMBIGUOUS` (≥2 comparable → **no LLM**, candidates + lineage returned for
+clarification, never a silent pick), `NONE` (→ agent returns `OUT_OF_CORPUS`,
+**no LLM**), `SEASON_MISMATCH` (→ **no LLM**).
+
+**Closed world / season lock.** Corpus = `src/lib/data/regulatory/**` +
+canonical model only. No web, no invented regulation. `NONE` →
+`regulatoryState = OUT_OF_CORPUS`, `failureCode = OUT_OF_CORPUS`, `answerAr =
+null`, `needsHumanReview = true`. A query naming any season ≠ `1447H` →
+`SEASON_MISMATCH` (a 1446H requirement is never carried into 1447H).
+
+**UNRESOLVED_REQUIREMENT.** `regulatoryState` is derived from the canonical
+record's `resolution`, never from the LLM. For `HAJ-PROVIDERS-01` / `MOH-01` it
+stays `UNRESOLVED_REQUIREMENT`; the deterministic confidence is `LOW`,
+`needsHumanReview = true`, and the answer explains WHY it is unresolved — it
+cannot resolve it (no schema field could).
+
+**Source lineage.** `sources[]` is built deterministically from canonical data —
+`requirementId`, `titleAr` (verbatim), `authorityId` + name, `officialSource`
+`reference` / `urls` / `locatorNote`, `matrixSourceRef`, `resolution`, `season`.
+The LLM never supplies a source string.
+
+**Explicit locator status (correctness fix).** `OfficialSource` now carries an
+explicit canonical field `locatorStatus: "VERIFIED_COMPLETE" | "INCOMPLETE"`,
+populated in `officialSources.ts` from Phase 1 truth (the `INCOMPLETE` sources
+are exactly those carrying `OFFICIAL_SOURCE_LOCATOR_UNRESOLVED`). Nothing is
+inferred from `locatorNote` any more — the agent's `SourceLineage.locatorComplete`
+is `src.locatorStatus === "VERIFIED_COMPLETE"`, and `getRequirementsMissingSourceLocator()`
+reads the explicit field too. Results: `HAJ-EXP-05` → `VERIFIED_COMPLETE` /
+`locatorComplete = true`; `HAJ-CATERING-01`, `HAJ-CAMP-01`, `HAJ-PROVIDERS-01`
+→ `INCOMPLETE` / `locatorComplete = false`. No page number invented.
+
+**Confidence is fully deterministic (correctness fix).** The LLM has **no
+confidence field** — a body carrying one fails `.strict()` schema validation and
+is never honoured. The canonical confidence is computed by code from
+retrieval / regulatory-state / source-lineage conditions only, with no numeric
+score and no invented threshold (the earlier 0.67 / 0.34 / 0–100 mapping is
+removed):
+- `HIGH` — one clear `SPECIFIED` requirement, complete official-source locator,
+  an answer was produced, no material ambiguity.
+- `MEDIUM` — `SPECIFIED`, identity clear, but the official-source locator/detail
+  is incomplete.
+- `LOW` — `UNRESOLVED_REQUIREMENT`; unresolved ambiguity; no answer produced;
+  `OUT_OF_CORPUS` / `SEASON_MISMATCH` (there `LOW` explicitly means *low ability
+  to answer from the approved corpus*, documented in `confidenceReasonAr`, not
+  low confidence in a regulation).
+`confidenceReasonAr` is a deterministic string built from the same conditions.
+`needsHumanReview = confidence !== "HIGH"` (so every non-`HIGH` result is
+flagged). The LLM can neither raise nor lower any of this.
+
+**Applicability contradiction protection (correctness fix).** For
+`explainApplicability`, the engine outcome is turned into a deterministic
+canonical statement:
+- `APPLICABLE` → "المتطلب منطبق على ملف الشركة وفق قاعدة الانطباق الحتمية."
+- `NOT_APPLICABLE` → "المتطلب غير منطبق على ملف الشركة وفق قاعدة الانطباق الحتمية."
+- `INSUFFICIENT_DATA` → "لا تتوفر بيانات كافية لتحديد الانطباق حتميًا."
+The model's `applicabilityExplanationAr` (and its free-text `answerAr`) is
+surfaced only when a deterministic check finds no contradictory applicability
+claim; a contradictory claim is **replaced** with the canonical statement and a
+note is added to `confidenceReasonAr`. Contradictory prose is never shown.
+Consistent explanatory detail is appended under the canonical statement.
+
+**Missing information stays truthful (correctness fix).** `ApplicabilityResult`
+now carries `missingCompanyFields: string[]`, populated **inside**
+`applicabilityEngine.ts` — the EXACT absent required inputs, distinct from
+`companyFieldsUsed` (which also lists inputs that are present). `APPLICABLE` /
+`NOT_APPLICABLE` → `[]`; `INSUFFICIENT_DATA` → only the undeclared inputs that
+block the decision (a conflict yields `[]`; an empty `serviceProviders[]` is a
+declared state, not an absence, so HAJ-PROVIDERS-01's not-declared branch
+returns only `declaredFacts.contractsExternalServiceProviders`). The agent seeds
+canonical `missingInformation` **only** from
+`deterministicApplicability.missingCompanyFields`; those entries always survive
+and the model's list is concatenated afterwards as additive detail only. A model
+returning `[]` / `null` / unrelated text cannot remove or replace them. A field
+the rule merely *consulted* but which is present is never surfaced as missing.
+
+**Output schema.** `regulatoryAgentAnswerSchema` (`.strict()`, registered as
+`regulatoryAgentAnswer`, canonical type `RegulatoryAgentAnswer`): `answerAr`,
+`requirementIds`, `authorityId`, `missingInformation`,
+`applicabilityExplanationAr` — **no `confidence` / `confidenceReasonAr`**. No
+field can carry a compliance status / official weight / penalty / criticality /
+numeric target / integration state — and the shared guardrail
+(`approvedRequirementIds` = the retrieval candidates, `approvedAuthorityIds` =
+the 3 authorities) rejects any such attempt AFTER JSON parsing, before Zod.
+`confidence` / `confidenceReasonAr` / `regulatoryState` / `needsHumanReview` /
+`sources` / `deterministicApplicability` are all attached by the orchestrator,
+not parsed from the model.
+
+**Shape tolerance kept minimal.** `lenientStringArray` (in `schemas/common.ts`)
+still normalises a lone string → `[string]` and `null` → `[]` for the
+non-authoritative `missingInformation` / `requirementIds` lists; a number is not
+coerced and still fails. The numeric-confidence coercion is gone entirely. The
+agent prompt carries an explicit JSON skeleton + per-field type rules;
+`maxTokens: 2048` for Arabic-answer + reasoning headroom.
+
+**Files.**
+- new: `src/lib/ai/agents/regulatoryRetrieval.ts`, `regulatoryAgent.ts`,
+  `index.ts`; `src/lib/ai/agents/__tests__/regulatoryRetrieval.test.ts` (13),
+  `regulatoryAgent.test.ts` (39); `src/lib/ai/scripts/liveRegulatoryAgent.ts`.
+- changed: `src/lib/model/regulatory.ts` (`LocatorStatus`,
+  `OfficialSource.locatorStatus`), `src/lib/data/regulatory/officialSources.ts`
+  (explicit `locatorStatus` on all 5 sources), `src/lib/data/regulatory/index.ts`
+  (`getRequirementsMissingSourceLocator` reads the explicit field),
+  `src/lib/engine/applicabilityEngine.ts` (`ApplicabilityResult.missingCompanyFields`,
+  populated per branch), `src/lib/ai/schemas/common.ts` (`lenientStringArray`
+  only — numeric confidence coercion removed), `schemas/regulatory.ts`
+  (`regulatoryAgentAnswerSchema`, no `confidence`), `schemas/index.ts` (registry),
+  `schemas/__tests__/schemas.test.ts`, `src/lib/model/ai.ts`
+  (`RegulatoryAgentAnswer` without `confidence`, `RegulatoryState`),
+  `src/lib/data/regulatory/__tests__/regulatoryMatrix.test.ts` (+locatorStatus),
+  `src/lib/engine/__tests__/applicabilityEngine.test.ts` (+missingCompanyFields),
+  `src/lib/engine/__tests__/verificationEngine.test.ts` (fixture field).
+
+**Checks:** `typecheck` ✓ · `lint` ✓ · `npm test` 230 pass / 0 fail (was 175,
++55) · `build` ✓. Not committed, not pushed. Phase 6 not started.
+
+**`LIVE_REGULATORY_AGENT_TEST = PASSED`** (re-run after these two fixes) —
+provider `gemini`, model `gemini-3.6-flash`, ~48 s, requirement `HAJ-EXP-05`,
+canonical title "توثيق فعاليات ومبادرات فريق السعادة" (unchanged),
+regulatoryState `SPECIFIED`, confidence `HIGH` (deterministic — `VERIFIED_COMPLETE`
+locator + `SPECIFIED`), `needsHumanReview` false, `locatorComplete` true, stored
+official source returned verbatim, no compliance calc, no invented penalty /
+requirement, structured output passed Zod + guardrails, no secret content. (The
+first attempt of this re-run returned a controlled `PROVIDER_ERROR` — a
+transient transport-level throw; the failure model behaved as designed
+— `ok:false`, `answerAr:null`, deterministic lineage still attached, nothing
+fabricated — and the immediate retry passed.)
+
+The correctness fixes only *narrow* what the LLM is asked for: `confidence` /
+`confidenceReasonAr` are removed from the schema and the prompt (with an updated
+skeleton), and all authoritative values are now derived in code. The live path
+(retrieval → JSON-mode structured call → guardrails → Zod) is otherwise
+unchanged, and the deterministic outputs are fully covered by the 220 offline
+tests. Residual live risk is only "does Gemini return the 5 remaining keys
+cleanly" — strictly easier than before, and a stray `confidence` key would
+degrade to a one-retry `SCHEMA_VALIDATION_FAILED`, never a bad answer. Per the
+instruction the live call was **not** re-run; a quick re-run is recommended
+before final sign-off but is low-risk.
+
+---
+
 ## Phase 1 approval-gated items
 
 ### A — Arabic glossary — APPROVED (Phase 1)

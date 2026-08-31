@@ -228,6 +228,31 @@ test("source locator gaps are tracked without inventing a page number", () => {
   }
 });
 
+test("officialSource.locatorStatus is an explicit canonical field (not inferred from locatorNote)", () => {
+  const status = (id: string) => getRequirementByCanonicalId(id)!.officialSource!.locatorStatus;
+
+  assert.equal(status("HAJ-EXP-05"), "VERIFIED_COMPLETE");
+  assert.equal(status("HAJ-CATERING-01"), "INCOMPLETE");
+  assert.equal(status("HAJ-CAMP-01"), "INCOMPLETE");
+  assert.equal(status("HAJ-PROVIDERS-01"), "INCOMPLETE");
+
+  // every record has one of the two explicit values
+  for (const r of ALL) {
+    assert.ok(
+      r.officialSource!.locatorStatus === "VERIFIED_COMPLETE" ||
+        r.officialSource!.locatorStatus === "INCOMPLETE",
+      `${r.id} locatorStatus not explicit`,
+    );
+  }
+  // the only INCOMPLETE requirements are exactly the three §3A-C ones
+  assert.deepEqual(
+    ALL.filter((r) => r.officialSource!.locatorStatus === "INCOMPLETE")
+      .map((r) => r.id)
+      .sort(),
+    ["HAJ-CAMP-01", "HAJ-CATERING-01", "HAJ-PROVIDERS-01"],
+  );
+});
+
 test("verificationTarget is defined for the qualitative/field requirements", () => {
   for (const r of ALL.filter((x) => x.id.startsWith("CIV-") || x.id === "HAJ-PROVIDERS-01")) {
     assert.ok(r.verificationTarget && r.verificationTarget.length > 0, `${r.id} missing verificationTarget`);

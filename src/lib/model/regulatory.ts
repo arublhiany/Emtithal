@@ -65,6 +65,16 @@ export interface OfficialWeight {
 }
 
 /**
+ * Explicit canonical verification of the source locator (matrix §3A + §16). This
+ * is stored truth, NOT inferred from `locatorNote`:
+ * - `VERIFIED_COMPLETE` — a precise page/section locator is established in our
+ *   approved documents.
+ * - `INCOMPLETE` — it is not; a page number is never invented and an
+ *   "officialSource locator" note also appears in the requirement's `unresolved`.
+ */
+export type LocatorStatus = "VERIFIED_COMPLETE" | "INCOMPLETE";
+
+/**
  * A verified issuing-authority source (matrix §3A). Distinct from
  * `matrixSourceRef`, which only traces back to this implementation matrix.
  */
@@ -75,10 +85,14 @@ export interface OfficialSource {
   /** Canonical URL(s) for the official document / page. */
   urls: string[];
   /**
-   * Precise locator (page / section) when established in our approved
-   * documents; `null` when it is not — in which case an "officialSource
-   * locator" note also appears in `unresolved` and a page number is never
-   * invented.
+   * Explicit canonical locator verification. Consumers MUST read this rather
+   * than inferring completeness from `locatorNote`.
+   */
+  locatorStatus: LocatorStatus;
+  /**
+   * Precise locator (page / section) text when `locatorStatus` is
+   * `VERIFIED_COMPLETE`; a descriptive note otherwise. `null` when there is no
+   * text at all. Never a source of completeness truth — `locatorStatus` is.
    */
   locatorNote: string | null;
 }

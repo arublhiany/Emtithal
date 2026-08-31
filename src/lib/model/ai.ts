@@ -53,6 +53,31 @@ export interface RegulatoryAgentOutput {
   unresolved: string[];
 }
 
+/**
+ * Whether an approved regulatory record backs the answer, and if so whether it
+ * is verified truth (Phase 5). `OUT_OF_CORPUS` = the question is not supported by
+ * the approved closed-world corpus — no regulation is generated for it.
+ */
+export type RegulatoryState = "SPECIFIED" | "UNRESOLVED_REQUIREMENT" | "OUT_OF_CORPUS";
+
+/**
+ * Raw structured output of the Regulatory Intelligence Agent's LLM call
+ * (Phase 5). NON-AUTHORITATIVE interpretation only — the orchestrator derives
+ * everything authoritative deterministically and never trusts these fields as
+ * truth. There is deliberately no `confidence` field: the canonical confidence
+ * is set by code from retrieval / regulatory-state / source-lineage conditions,
+ * and the model must not be able to move it.
+ */
+export interface RegulatoryAgentAnswer {
+  answerAr: string;
+  requirementIds: string[];
+  authorityId: string | null;
+  /** Additive only — never replaces the deterministic engine's missing fields. */
+  missingInformation: string[];
+  /** Explanatory detail under the deterministic canonical applicability statement. */
+  applicabilityExplanationAr: string | null;
+}
+
 // --- Evidence Intelligence Agent (AI arch §6) -------------------------------
 export interface EvidenceFact {
   field: string;
