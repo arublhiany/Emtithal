@@ -396,6 +396,58 @@ Phase 3 correctness fixes (applied before checkpoint):
   regulatory-pending), distinct from `regulatoryPendingCount`. Coverage is not
   penalised for it. Demo: `["HAJ-NUSUK-01"]`.
 
+### Phase 4 — Real server-side AI service layer + guardrails — IMPLEMENTATION COMPLETE, AWAITING APPROVAL
+Not committed. `AGENTS.md` / `CLAUDE.md` untouched. No UI/Figma change. No
+regulatory-fact change. The deterministic Verification Engine stays authoritative.
+
+Dependencies installed (approved only): `@anthropic-ai/sdk@0.122.0`,
+`zod@3.25.76`. Transitive (deps of the Anthropic SDK): `standardwebhooks`,
+`json-schema-to-ts` (+ their sub-deps; 7 packages total). No other runtime dep.
+
+New — `src/lib/ai/`:
+- `client/types.ts` — `AIClient` (`generateStructured` / `generateText`),
+  `AICallResult<T>` (discriminated; failure carries no `data`), `AIFailureCode`
+  (`AI_UNAVAILABLE` / `SCHEMA_VALIDATION_FAILED` / `GUARDRAIL_REJECTED` /
+  `PROVIDER_ERROR`), `AICallMeta`, `AITransport`.
+- `client/config.ts` — `readAIConfig(env)` reads exactly `AI_PROVIDER_API_KEY` +
+  `AI_MODEL`; missing → `{ present: false, missing: [...] }` (never throws).
+- `client/aiClient.ts` — `StructuredAIClient` (retry-once → guardrail scan (no
+  retry) → schema validate → log; never fabricates) + `UnavailableAIClient`
+  (every call → `AI_UNAVAILABLE`).
+- `client/anthropicTransport.ts` — the ONLY file importing `@anthropic-ai/sdk`;
+  runtime `typeof window` browser guard.
+- `client/index.ts` — `getAIClient()` (server-only guard); returns
+  `UnavailableAIClient` when unconfigured, else Anthropic-backed.
+- `client/logging.ts` — `logAICall(meta)`: requestId / purpose / provider /
+  model / durationMs / success / schemaValid / failureCode / confidence /
+  attempts. Never logs keys, prompts, or evidence content.
+- `guardrails/sharedGuardrails.ts` — `SHARED_GUARDRAIL_SYSTEM_PROMPT`,
+  `withSharedGuardrails()`, and CODE-level `scanForForbiddenContent()` /
+  `scanTextForForbiddenContent()`. Rejects (never strips) output attempting a
+  compliance-status judgment, official/track weight, penalty/fine/sanction,
+  internal criticality / critical gate, numeric target-as-truth, integration
+  state (`CONNECTED` / `true`), or an out-of-corpus requirement/authority when an
+  approved set is supplied.
+- `schemas/` — Zod schemas (`.strict()`) for the Phase 1 canonical agent outputs:
+  `regulatoryAgentOutput`, `evidenceAgentOutput` (+ fact), `decisionObject`,
+  `scenario`, `scenarioComparisonResult`, `researchQueryResult` (+ study;
+  refine: `CORPUS_PENDING` ⇒ no studies), `agentResult` envelope. `AI_OUTPUT_SCHEMAS`
+  registry. Type-parity tests assert each `z.infer` matches its Phase 1 type.
+  Note: `scenarioComparisonResultSchema` OMITS `affectedStatuses` (AI must not
+  set a compliance status — guardrail-forbidden); the deterministic engine fills
+  it. The Phase 1 `ScenarioComparisonResult` type is revisited in Phase 7.
+- `scripts/liveConnectivity.ts` — one-off real Claude probe (non-regulatory);
+  prints `NOT_RUN_MISSING_CREDENTIALS` when unconfigured.
+- Tests: `client/__tests__/aiClient.test.ts`, `client/__tests__/serverOnly.test.ts`,
+  `guardrails/__tests__/sharedGuardrails.test.ts`, `schemas/__tests__/schemas.test.ts`.
+
+Not done (Phase 4 owns infra only): agent behaviour / prompts / orchestration
+(Phases 5–9). Nothing wires `getAIClient()` into the app yet, so the Anthropic
+SDK is in no client or server bundle.
+
+Live AI connectivity test: **NOT_RUN_MISSING_CREDENTIALS** — `AI_PROVIDER_API_KEY`
+and `AI_MODEL` are not configured in this environment.
+
 ---
 
 ## Phase 1 approval-gated items
