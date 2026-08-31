@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useDemoStore } from "@/lib/store/demoStore";
-import { getRequirements } from "@/lib/data/requirements";
+import { getRegulatoryRequirements } from "@/lib/data/regulatory";
 import type { Evidence, EvidenceFileType } from "@/lib/types";
 import { DEMO_COMPANY_ID } from "@/lib/data/company";
 
@@ -24,7 +24,7 @@ function formatSize(bytes: number): string {
 
 export function EvidenceUploadForm() {
   const { addEvidence } = useDemoStore();
-  const requirements = getRequirements();
+  const requirements = getRegulatoryRequirements();
   const [requirementId, setRequirementId] = useState(requirements[0].id);
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -40,6 +40,7 @@ export function EvidenceUploadForm() {
     // in this MVP; the file itself is never uploaded anywhere.
     window.setTimeout(() => {
       const requirement = requirements.find((r) => r.id === requirementId)!;
+      const reqTitleAr = requirement.titleAr;
       const evidence: Evidence = {
         id: `EV-DEMO-${Date.now()}`,
         companyId: DEMO_COMPANY_ID,
@@ -52,7 +53,7 @@ export function EvidenceUploadForm() {
         status: "needs_review",
         validationStatus: "pending_verification",
         analysis: {
-          summaryAr: `تم استلام الملف وربطه بمعيار ${requirementId} — ${requirement.nameAr}. هذا تحليل أولي تجريبي داخل المتصفح فقط (لا يوجد تخزين أو معالجة فعلية على خادم)، وبانتظار المراجعة البشرية لاعتماد المحتوى رسميًا.`,
+          summaryAr: `تم استلام الملف وربطه بمتطلب ${requirementId} — ${reqTitleAr}. هذا تحليل أولي تجريبي داخل المتصفح فقط (لا يوجد تخزين أو معالجة فعلية على خادم)، وبانتظار المراجعة البشرية لاعتماد المحتوى رسميًا.`,
           extractedFields: [],
           matchedRequirementIds: [requirementId],
           missingAr: [],
@@ -83,16 +84,17 @@ export function EvidenceUploadForm() {
 
       <div>
         <label className="block text-xs font-medium text-[var(--color-ink-muted)] mb-1.5">
-          ربط الدليل بمعيار
+          ربط الدليل بمتطلب
         </label>
         <select
           value={requirementId}
           onChange={(e) => setRequirementId(e.target.value)}
+          aria-label="ربط الدليل بمتطلب"
           className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
         >
           {requirements.map((r) => (
             <option key={r.id} value={r.id}>
-              {r.id} — {r.nameAr}
+              {r.id} — {r.titleAr}
             </option>
           ))}
         </select>

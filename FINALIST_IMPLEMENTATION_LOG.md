@@ -1783,3 +1783,205 @@ Assessment / verification outcomes are NOT part of this fixture — Phase 3 adds
 ## Unresolved issues
 - None open from Phase 0. (The `.env.example` tracking question was resolved by
   the `!.env.example` rule in `.gitignore`.)
+
+---
+
+# Phase 11 — Full Figma-Faithful Product UI (parent `6f036e6`)
+
+Scope: bring the whole visible product into the approved Figma visual direction
+while preserving every canonical truth and deterministic behavior from Phases
+0–10. UI/UX + wiring only — no backend truth redesigned, no product behavior
+invented, no Phase 1–10 guardrail weakened.
+
+## New files
+- `src/lib/ui/status.ts` — one source for canonical enum → UI label/tone,
+  wired from `GLOSSARY_AR`. `STATUS_LABEL_AR`, `STATUS_TONE`,
+  `APPLICABILITY_LABEL_AR`, `DATA_SOURCE_LABEL_AR`, `READINESS_INDEX_AR`,
+  `VERIFICATION_COVERAGE_AR`, `show(n) → "—" for null/undefined` (never `0`).
+- `src/components/ui/viz.tsx` — brand-token visual primitives: `KpiTile`,
+  `Donut` (null → neutral ring, centre `show(value)`), `ProgressBar`,
+  `BarChartH`. Line-SVG only, `currentColor`, no emoji.
+- `src/lib/hooks/useGovernmentPortfolio.ts` — runs the deterministic
+  `verifyAll` per demo government profile; returns per-company readiness /
+  coverage / blockers / pending counts and a clearly demo-scoped portfolio
+  mean (never an Official Score).
+- `src/lib/ui/__tests__/phase11-ui.test.ts` — 11 UI-contract tests.
+
+## Rebuilt screens
+- `/company/dashboard` — readiness Donut + 6 KPI tiles (coverage, critical
+  blockers, verification gaps, regulatory-pending, applicability-pending,
+  evidence follow-up), canonical criteria overview, open actions, recent
+  alerts, verification-status distribution bar. Bound to `useCompanyCompliance`.
+- `/company/compliance` — demo-config chip, readiness Donut, requirement-card
+  grid via `RequirementCard`.
+- `/ministry/control-center` — portfolio KPI band + managed-requirement /
+  draft / notification counts + company overview table + per-requirement
+  readiness model + recent regulatory changes. Bound to
+  `useGovernmentPortfolio` + `useRegMgmt`; no old `73/100`, no invented
+  national metrics, demo-scoped labels throughout.
+- `/ministry/companies` and `/ministry/companies/[id]` — deterministic
+  portfolio table + per-company summary; no misleading score ranking.
+- `/ministry/standards` — now a safe `redirect("/ministry/requirements")`.
+
+## Modified
+- `src/components/ui/Card.tsx` — `"use client"`; `PageHeader` / `SectionHeader`
+  / `EmptyState` now delegate to the `kit.tsx` primitives so every legacy page
+  inherits the brand system, Cairo, shell, and no-emoji icon language.
+- `src/components/ministry/CompanyTable.tsx` — rebuilt on `PortfolioRow`.
+- `src/components/requirements/RequirementCard.tsx` — `ProgressBar` from
+  `viz`, `show()` for readiness, weight footer relabelled
+  «الوزن: N% (تكوين تجريبي)» (was «الوزن الرسمي»).
+- `src/app/company/decision-simulation/page.tsx` — `PageHead` + `EmptyState`
+  from `kit`; Phase 7 deterministic scenario simulation preserved unchanged.
+
+## Checks
+- `npm run typecheck` — PASS
+- `npm run lint` — PASS
+- `npm test` — 490 pass / 0 fail (479 pre-existing + 11 new; none weakened)
+- `npm run build` — PASS (20 routes)
+- Dev-server smoke of all 18 routes — every route 200 (`/ministry/standards`
+  307 → `/ministry/requirements`), no error markers, no emoji in output.
+
+Not committed / not pushed — awaiting Phase 11 approval.
+
+## Phase 11 — correction round (post-review)
+
+Acceptance gaps from the review, all addressed:
+
+1. **Full screen rebuilds** (not just inherited primitives): `company/evidence`,
+   `company/gaps` (now canonical: critical blockers / verification gaps /
+   pending / insufficient / regulatory-pending / applicability-pending — no
+   legacy risk matrix, no predictive probability), `company/improvement-plan`
+   (kit `Table`, "أثر تقديري" reworded as an indicative demo estimate),
+   `company/alerts` (operational + regulatory-change notifications, company-
+   scoped), `company/compliance/[id]` (kit, canonical status/readiness/weight
+   and canonical official source), `ministry/risks` (deterministic priority
+   ranking on `useGovernmentPortfolio` — no invented risk tier, no
+   `getMinistryCompanies`, no hard-coded company), `ministry/reviews`
+   (three separated lanes: AI-interpretation disputes / human evidence
+   verification / regulatory-pending, each `BoundaryChip`-tagged),
+   `ministry/alerts` (regulatory-change notifications vs operational).
+   `ministry/requirements*` and `ministry/reports` were already on the kit —
+   left functionally intact.
+2. **Official weight** = published regulatory metadata. New
+   `officialWeightText()` + `OFFICIAL_WEIGHT_LABEL_AR` / `_NOTE_AR`.
+   HAJ-EXP-01…05 → «الوزن الرسمي المنشور: 20%»; the other 10 →  «—».
+   Never substitutes the legacy demo `weight`. `RequirementCard` and
+   `CanonicalRequirementCard` both read the official weight only.
+3. **Readiness never hidden by tone**: removed
+   `readiness.tone === "warning" ? null : readinessValue` on the dashboard
+   Donut — now `readinessAvailable ? readinessValue : null` everywhere.
+   Regression tests added.
+4. **Requirement/status truth**: `company/compliance` now renders **all 15**
+   canonical requirements grouped by authority via a new
+   `canonicalRequirements` / `authoritiesView` projection on
+   `useCompanyCompliance` (canonical ID primary, canonical status/readiness,
+   official weight only where verified). Legacy `CR-00x` is mapped to the
+   canonical ID at every display/link site through new
+   `displayRequirementId()` (alerts, decision result, evidence, improvement
+   plan, reviews); two demo fixture strings de-legacied.
+5. **Visual QA**: dev-server SSR-HTML + DOM-structure inspection + static
+   scans on all 20 routes — NOT rendered screenshots (no headless-browser or
+   screenshot tool is available in this environment; stated as a limitation).
+
+New: `src/components/requirements/CanonicalRequirementCard.tsx`,
+`displayRequirementId` in `src/lib/data/regulatory`, official-weight helpers in
+`src/lib/ui/status.ts`, +8 Phase 11 tests (total 499, all green).
+`RegMgmtProvider` now also wraps the company shell (read-only) so the company
+can see regulatory-change notifications.
+
+Checks after the correction round: typecheck PASS · lint PASS · test **499
+pass / 0 fail** · build PASS (20 routes). Not committed / not pushed.
+
+## Phase 11 — correction round 2: end-to-end regulatory notifications
+
+The government demo portfolio's first entry is now the **same** canonical demo
+company the company portal uses — `DEMO_COMPANY_PROFILE` (id
+`CANONICAL_DEMO_COMPANY_ID = "demo-company-01"`), used by reference, not copied.
+The three remaining rows are relabelled `demo-gov-var-02/03/04` and stay
+explicitly synthetic declared-fact variations. New
+`PRIMARY_DEMO_COMPANY_ID` constant (re-exported from
+`governmentPortfolio.ts`).
+
+`/company/alerts` now filters the regulatory-change feed on
+`PRIMARY_DEMO_COMPANY_ID` (was the unrelated `company-alnoor`), so a change
+issued in the government portal that is applicable to the primary demo company
+surfaces there under the same identity. `ministry/control-center`'s
+"التفاصيل" link points at the same id.
+
+End-to-end (deterministic, unchanged engine): government issues/activates a
+version → `analyzeImpact` runs the approved applicability engine over the
+portfolio → `buildRegChangeNotifications` emits one notification per affected
+company (state ≠ NO_IMPACT) → the primary demo company's notification is
+visible at `/company/alerts`; a NOT_APPLICABLE variant gets none; no broadcast;
+`makesNonCompliant: false` / `autoNonComplianceApplied: false` preserved.
+
+New tests: `src/lib/regmgmt/__tests__/notificationFlow.test.ts` (5). Total
+**504 pass / 0 fail**. typecheck PASS · lint PASS · build PASS (20 routes).
+Not committed / not pushed.
+
+## Phase 11 — correction round 3: single primary demo company identity
+
+The company portal previously mixed two identities — the legacy
+`company-alnoor` / "شركة النور" (operational demo store) and the canonical
+`demo-company-01` / `DEMO_COMPANY_PROFILE` (compliance/readiness). Unified onto
+the **canonical** identity, which is owned by `@/lib/data/demo/companyProfile`
+(`CANONICAL_DEMO_COMPANY_ID`):
+
+- `src/lib/data/company.ts` — `DEMO_COMPANY_ID` is now
+  `= CANONICAL_DEMO_COMPANY_ID` (re-export, no new profile); `getCompanyProfile()`
+  keeps its legacy display fields but takes `id` + `nameAr` from the canonical
+  source. Every operational fixture (`evidence`, `actions`, `alerts`,
+  `tickets`, `gaps`, `risks`, `demoStore` seed) imports `DEMO_COMPANY_ID`, so
+  all `companyId`s follow automatically — content/behaviour untouched, only the
+  identity field.
+- `DisputeReportButton.tsx` — hard-coded `"company-alnoor"` → `DEMO_COMPANY_ID`.
+- `governmentPortfolio.ts` — dropped its `PRIMARY_DEMO_COMPANY_ID` export;
+  company-facing code (`/company/alerts`) and `/ministry/control-center` now
+  filter/link against `CANONICAL_DEMO_COMPANY_ID` from the shared canonical
+  source directly. Primary portfolio row name matches the company portal.
+- Persistence: `SCHEMA_VERSION` 2 → 3, `STORAGE_KEY` → `emtithal-demo-state-v3`,
+  `emtithal-demo-state-v2` added to `LEGACY_STORAGE_KEYS`. A stale v2 blob
+  (which the shape check would not catch a stale `companyId` in) is rejected as
+  `version_mismatch` and the store reseeds with the unified identity; the old
+  key is cleaned up on first v3 load. Deterministic; schema shape unchanged.
+- `ministryCompanies.ts` — comment only; its live demo row already follows
+  `getCompanyProfile()`. The unrelated static illustrative rows are untouched.
+
+`company-alnoor` now appears only inside `__tests__` (historical fixtures) —
+verified by a scan test over `src/app`, `src/components`, `src/lib` (excluding
+`__tests__`).
+
+New tests: `src/lib/data/__tests__/demoCompanyIdentity.test.ts` (5),
+`notificationFlow.test.ts` rewritten to assert against the canonical constant
+(6), +1 persistence stale-v2 test. Total **511 pass / 0 fail**. typecheck PASS ·
+lint PASS · build PASS (20 routes). Not committed / not pushed.
+
+## Phase 11 — correction round 4: one company = one canonical fact set
+
+`getCompanyProfile()` (the legacy `CompanyProfile` presentation object) kept a
+hard-coded `RAW_PROFILE` — `pilgrimsServed: 6200`, `workforceSize: 260`,
+`supervisors: 6`, `serviceLocations: 9` — while the engines run on
+`DEMO_COMPANY_PROFILE` (`pilgrims.count 4200`, `workforce.count 180`,
+`locationsAr` length 3). Two fact sets for one identity. Now every overlapping
+fact is **derived from the canonical profile**:
+
+| presentation field | now derived from |
+|---|---|
+| `pilgrimsServed` | `DEMO_COMPANY_PROFILE.pilgrims.count` (4200) |
+| `workforceSize` | `DEMO_COMPANY_PROFILE.workforce.count` (180) |
+| `serviceLocations` | `DEMO_COMPANY_PROFILE.locationsAr.length` (3) |
+| `city` | `DEMO_COMPANY_PROFILE.locationsAr[0]` ("مكة المكرمة") |
+| `seasonLabel` | `season` "1447H" → "موسم 1447هـ" (deterministic) |
+| `supervisors` | `ceil(workforce.count / 35)` — the capability engine's own recommended number, a deterministic function of canonical workforce (no canonical "supervisors" fact exists) |
+| `capabilityIndicators` | `computeCapabilityIndicators` fed the canonical-derived values above |
+
+`RAW_PROFILE` removed. Display-only labels with no canonical equivalent and no
+effect on applicability/readiness remain: `nameEn` (English display name) and
+`license` (fictional licence label) — clearly commented as such.
+
+New tests in `demoCompanyIdentity.test.ts` (+3): overlapping operational facts
+equal the canonical profile; capability indicators equal a recomputation from
+canonical-derived facts; `company.ts` contains no `6200` / `260` / `RAW_PROFILE`
+and no hard-coded count assignment. Total **514 pass / 0 fail**. typecheck PASS ·
+lint PASS · build PASS (20 routes). Not committed / not pushed.

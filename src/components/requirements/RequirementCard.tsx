@@ -1,13 +1,21 @@
 import Link from "next/link";
 import type { Requirement } from "@/lib/types";
 import { StatusBadge, RiskBadge, DemoConfigBadge } from "@/components/ui/Badge";
-import { ProgressBar } from "@/components/ui/ScoreRing";
+import { ProgressBar } from "@/components/ui/viz";
+import {
+  OFFICIAL_WEIGHT_LABEL_AR,
+  officialWeightText,
+  show,
+} from "@/lib/ui/status";
 
 export function RequirementCard({
   requirement,
+  officialWeightPercent = null,
   compact = false,
 }: {
   requirement: Requirement;
+  /** Published within-track weight, or null where the matrix publishes none. */
+  officialWeightPercent?: number | null;
   compact?: boolean;
 }) {
   // Canonical readiness is authoritative when present. `null` = not assessable
@@ -35,11 +43,22 @@ export function RequirementCard({
           </h3>
         </div>
         <span className="text-2xl font-bold tabular-nums text-[var(--color-ink)] shrink-0">
-          {readinessAvailable ? shownValue : "—"}
+          {readinessAvailable ? show(shownValue ?? null) : "—"}
         </span>
       </div>
 
-      <ProgressBar value={readinessAvailable ? (shownValue ?? 0) : 0} />
+      <ProgressBar
+        value={readinessAvailable ? (shownValue ?? null) : null}
+        tone={
+          requirement.complianceStatus === "compliant"
+            ? "green"
+            : requirement.complianceStatus === "non_compliant"
+              ? "red"
+              : requirement.complianceStatus === "partially_compliant"
+                ? "amber"
+                : "neutral"
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-1.5">
         <StatusBadge status={requirement.complianceStatus} size="sm" />
@@ -54,7 +73,7 @@ export function RequirementCard({
 
       <div className="flex items-center justify-between pt-1 border-t border-[var(--color-border)]">
         <span className="text-[11px] text-[var(--color-ink-faint)]">
-          الوزن الرسمي: {requirement.weight}%
+          {OFFICIAL_WEIGHT_LABEL_AR}: {officialWeightText(officialWeightPercent)}
         </span>
         <DemoConfigBadge />
       </div>

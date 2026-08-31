@@ -5,7 +5,7 @@ import { useDemoStore } from "@/lib/store/demoStore";
 import { useCompanyCompliance } from "@/lib/hooks/useCompanyCompliance";
 import { simulateDecision } from "@/lib/engine/decisionEngine";
 import type { DecisionInput } from "@/lib/types";
-import { PageHeader } from "@/components/ui/Card";
+import { PageHead, EmptyState } from "@/components/ui/kit";
 import { DecisionForm } from "@/components/decision/DecisionForm";
 import { DecisionResult } from "@/components/decision/DecisionResult";
 
@@ -30,10 +30,10 @@ export default function DecisionSimulationPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHead
         eyebrow="محاكاة القرار"
         title="اعرف أثر القرار على الامتثال قبل تنفيذه"
-        descriptionAr="أدخل قرارًا تشغيليًا مقترحًا ليقوم امتثال بتحليل المعايير المتأثرة، وتوقع أثره على الامتثال، ومقارنة البدائل قبل اتخاذ القرار فعليًا."
+        subtitle="أدخل قرارًا تشغيليًا مقترحًا لتحليل المعايير المتأثرة وتوقّع الأثر ومقارنة البدائل — نتائج حتمية، دون تنبؤ بالذكاء الاصطناعي."
       />
 
       <div className="grid lg:grid-cols-5 gap-6">
@@ -68,9 +68,10 @@ export default function DecisionSimulationPage() {
           {activeResult ? (
             <DecisionResult result={activeResult} />
           ) : (
-            <div className="card p-10 text-center text-[var(--color-ink-muted)] text-sm">
-              أدخل قرارًا تشغيليًا وشغّل المحاكاة لعرض تحليل الأثر المتوقع على الامتثال.
-            </div>
+            <EmptyState
+              title="لا توجد محاكاة بعد"
+              hint="أدخل قرارًا تشغيليًا وشغّل المحاكاة لعرض تحليل الأثر المتوقع على الامتثال."
+            />
           )}
         </div>
       </div>

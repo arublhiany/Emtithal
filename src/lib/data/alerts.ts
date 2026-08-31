@@ -13,7 +13,7 @@ export function getSeedAlerts(): AlertItem[] {
       type: "critical_gap",
       titleAr: "فجوة حرجة في معيار ضمان حفظ حقوق ضيف الرحمن",
       descriptionAr:
-        "معيار CR-003 (معيار حرج) بنتيجة 40 من 100 — يتطلب إجراءً تصحيحيًا فوريًا ومراجعة بشرية.",
+        "متطلب HAJ-EXP-03 حرج بحالة غير ملتزم — يتطلب إجراءً تصحيحيًا فوريًا ومراجعة بشرية.",
       severity: "critical",
       requirementId: "CR-003",
       createdAtLabel: "قبل 9 أيام",

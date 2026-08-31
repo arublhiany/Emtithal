@@ -7,10 +7,36 @@ import { getRisks } from "@/lib/data/risks";
 import { getCompanyProfile } from "@/lib/data/company";
 import { computeReadinessLabel } from "@/lib/engine/scoringEngine";
 import { getDemoVerificationRun } from "@/lib/engine/complianceView";
-import { resolveRequirementId } from "@/lib/data/regulatory";
+import {
+  getAuthorities,
+  getRegulatoryRequirements,
+  resolveRequirementId,
+} from "@/lib/data/regulatory";
 import { toLegacyStatus } from "@/lib/legacy/compat";
 import type { ComplianceStatus } from "@/lib/model";
 import type { RiskLevel } from "@/lib/types";
+
+/**
+ * One canonical requirement as the company UI shows it. Status, readiness and
+ * applicability are the deterministic Verification Engine result; the official
+ * weight is published regulatory metadata (null where the matrix publishes
+ * none — never an internal/demo weight).
+ */
+export interface CanonicalRequirementView {
+  id: string;
+  titleAr: string;
+  authorityId: string;
+  authorityNameAr: string;
+  status: ComplianceStatus;
+  readiness: number | null;
+  applicability: "APPLICABLE" | "NOT_APPLICABLE" | "INSUFFICIENT_DATA";
+  applicabilityReason: string;
+  officialWeightPercent: number | null;
+  isUnresolvedRegulatory: boolean;
+  isCriticalBlocker: boolean;
+  /** A legacy per-criterion detail screen exists at /company/compliance/[id]. */
+  hasDetail: boolean;
+}
 
 /**
  * Legacy risk-chart projection of a canonical verification status. This is a
@@ -58,6 +84,49 @@ export function useCompanyCompliance() {
 
     const profile = getCompanyProfile();
 
+    // Full canonical requirement universe (all authorities) as the company UI
+    // renders it — NOT just the five experience criteria. Derived from the
+    // deterministic run; canonical ID is primary.
+    const owById = new Map(
+      run.officialWeightsDisplayOnly.map((w) => [w.requirementId, w] as const),
+    );
+    const metaById = new Map(getRegulatoryRequirements().map((r) => [r.id, r] as const));
+    const authorityNameById = new Map<string, string>(
+      getAuthorities().map((a) => [a.id, a.nameAr]),
+    );
+    const legacyDetailCanonicalIds = new Set(
+      getRequirements()
+        .map((r) => resolveRequirementId(r.id))
+        .filter((x): x is string => Boolean(x)),
+    );
+
+    const canonicalRequirements: CanonicalRequirementView[] = run.results.map((res) => {
+      const ow = owById.get(res.requirementId);
+      const meta = metaById.get(res.requirementId);
+      return {
+        id: res.requirementId,
+        titleAr: res.titleAr,
+        authorityId: res.authorityId,
+        authorityNameAr: authorityNameById.get(res.authorityId) ?? res.authorityId,
+        status: res.status,
+        readiness: res.readiness,
+        applicability: res.applicability,
+        applicabilityReason: res.applicabilityReason,
+        officialWeightPercent: ow ? ow.withinTrackWeightPercent : null,
+        isUnresolvedRegulatory: meta?.resolution === "UNRESOLVED_REQUIREMENT",
+        isCriticalBlocker: run.criticalBlockers.some(
+          (b) => b.requirementId === res.requirementId,
+        ),
+        hasDetail: legacyDetailCanonicalIds.has(res.requirementId),
+      };
+    });
+
+    const authoritiesView = getAuthorities().map((a) => ({
+      id: a.id,
+      nameAr: a.nameAr,
+      requirements: canonicalRequirements.filter((r) => r.authorityId === a.id),
+    }));
+
     // LEGACY_DEMO_ONLY — for the legacy /company/gaps and /ministry/risks pages
     // only. Not used in any canonical KPI below.
     const legacyDemoGaps = getGaps();
@@ -77,6 +146,8 @@ export function useCompanyCompliance() {
 
     return {
       requirements,
+      canonicalRequirements,
+      authoritiesView,
       profile,
 
       // Canonical Emtithal Readiness Index V1 (unweighted mean of assessable

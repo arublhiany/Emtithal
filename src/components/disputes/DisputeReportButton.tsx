@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useDemoStore } from "@/lib/store/demoStore";
+import { DEMO_COMPANY_ID } from "@/lib/data/company";
 import type { SupportTicketIssueType } from "@/lib/types";
 
 const ISSUE_OPTIONS: { id: SupportTicketIssueType; labelAr: string }[] = [
@@ -31,7 +32,7 @@ export function DisputeReportButton({
     const id = `TCK-${(state.tickets.length + 1).toString().padStart(3, "0")}-${Date.now().toString().slice(-4)}`;
     addTicket({
       id,
-      companyId: "company-alnoor",
+      companyId: DEMO_COMPANY_ID,
       createdByRoleAr,
       aiResultRefAr,
       issueType,

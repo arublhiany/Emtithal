@@ -7,6 +7,14 @@
 // shape — the old shape is never trusted blindly. Rejected payloads fall back
 // to the fresh seed.
 //
+// Phase 11 bumps v2 -> v3: the primary demo company id was unified onto the
+// canonical `CANONICAL_DEMO_COMPANY_ID`, retiring an earlier legacy id. The
+// persisted state carries `companyId` fields (evidence / actions / alerts /
+// tickets) and `selectedMinistryCompanyId` that the shape check does not
+// validate, so any v2 blob may still hold the retired id. Bumping the version
+// deterministically discards v2 state and reseeds with the unified identity —
+// the demo's interactive state is ephemeral by design.
+//
 // Pure module (no React, no DOM) so it can be unit-tested directly.
 // =============================================================================
 
@@ -32,14 +40,17 @@ export interface DemoState {
   selectedMinistryCompanyId: string;
 }
 
-/** Bumped whenever the persisted `DemoState` shape changes incompatibly. */
-export const SCHEMA_VERSION = 2;
+/** Bumped whenever the persisted `DemoState` shape or identity changes incompatibly. */
+export const SCHEMA_VERSION = 3;
 
-/** Current storage key. Bumped from v1 so stale unversioned blobs are ignored. */
-export const STORAGE_KEY = "emtithal-demo-state-v2";
+/** Current storage key. Bumped so stale v1/v2 blobs are ignored. */
+export const STORAGE_KEY = "emtithal-demo-state-v3";
 
-/** Older keys, removed on the first successful v2 load. */
-export const LEGACY_STORAGE_KEYS = ["emtithal-demo-state-v1"] as const;
+/** Older keys, removed on the first successful v3 load. */
+export const LEGACY_STORAGE_KEYS = [
+  "emtithal-demo-state-v1",
+  "emtithal-demo-state-v2",
+] as const;
 
 interface PersistedEnvelope {
   schemaVersion: number;

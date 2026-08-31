@@ -1,24 +1,33 @@
 "use client";
 
-import { getMinistryCompanies } from "@/lib/data/ministryCompanies";
-import { PageHeader, Card } from "@/components/ui/Card";
+import { useGovernmentPortfolio } from "@/lib/hooks/useGovernmentPortfolio";
+import { PageHead } from "@/components/ui/kit";
+import { KpiTile } from "@/components/ui/viz";
 import { CompanyTable } from "@/components/ministry/CompanyTable";
+import { READINESS_INDEX_AR, show } from "@/lib/ui/status";
 
 export default function MinistryCompaniesPage() {
-  const companies = getMinistryCompanies();
+  const p = useGovernmentPortfolio();
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="الشركات"
-        title="الشركات المسجلة"
-        descriptionAr="قائمة شركات خدمة الحج ضمن النموذج التجريبي مع مستوى الامتثال والمخاطر لكل شركة."
+      <PageHead
+        eyebrow="الجهات الحكومية"
+        title="محفظة الشركات (تجريبي)"
+        subtitle="قائمة شركات خدمة الحج ضمن النموذج التجريبي مع مؤشر الجاهزية ونسبة التحقق والعوائق لكل شركة — دون درجة رسمية."
       />
-      <Card padding="p-0">
-        <div className="p-5">
-          <CompanyTable companies={companies} />
-        </div>
-      </Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiTile label="عدد الشركات" value={p.count} icon="companies" />
+        <KpiTile
+          label={`متوسط ${READINESS_INDEX_AR}`}
+          value={show(p.portfolioReadiness)}
+          suffix="من 100"
+          icon="control"
+        />
+        <KpiTile label="بحاجة متابعة" value={p.companiesNeedingAttention} icon="warning" tone="amber" />
+        <KpiTile label="بانتظار التحقق" value={p.totalPendingVerification} icon="reviews" tone="indigo" />
+      </div>
+      <CompanyTable rows={p.rows} />
     </div>
   );
 }

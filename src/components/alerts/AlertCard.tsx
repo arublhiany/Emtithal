@@ -1,6 +1,7 @@
 import type { AlertItem } from "@/lib/types";
 import { RiskBadge } from "@/components/ui/Badge";
 import { NavIcon } from "@/components/layout/NavIcon";
+import { displayRequirementId } from "@/lib/data/regulatory";
 
 const RISK_FG: Record<AlertItem["severity"], string> = {
   critical: "var(--color-risk-critical)",
@@ -47,7 +48,7 @@ export function AlertCard({
           <span className="text-[11px] text-[var(--color-ink-faint)]">{alert.createdAtLabel}</span>
           {alert.requirementId && (
             <span className="text-[11px] text-[var(--color-ink-faint)]">
-              معيار {alert.requirementId}
+              متطلب {displayRequirementId(alert.requirementId)}
             </span>
           )}
           {onMarkRead && !alert.isRead && (

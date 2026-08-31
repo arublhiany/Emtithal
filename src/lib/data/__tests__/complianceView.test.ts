@@ -10,10 +10,11 @@ import { getDemoVerificationRun } from "@/lib/engine/complianceView";
 import { getMinistryCompanies } from "@/lib/data/ministryCompanies";
 import { getGaps } from "@/lib/data/gaps";
 import { getRisks } from "@/lib/data/risks";
+import { CANONICAL_DEMO_COMPANY_ID } from "@/lib/data/demo/companyProfile";
 
 test("ministry demo row derives NO company-wide compliance status from Readiness", () => {
   const run = getDemoVerificationRun();
-  const demo = getMinistryCompanies().find((c) => c.id.startsWith("demo-") || c.id === "company-alnoor");
+  const demo = getMinistryCompanies().find((c) => c.id === CANONICAL_DEMO_COMPANY_ID);
   assert.ok(demo, "demo company row present");
 
   // Compatibility-only neutral value — never compliant/partially/non from Readiness.

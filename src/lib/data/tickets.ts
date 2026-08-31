@@ -12,7 +12,7 @@ export function getSeedTickets(): SupportTicket[] {
       id: "TCK-001",
       companyId: DEMO_COMPANY_ID,
       createdByRoleAr: "مسؤول الامتثال",
-      aiResultRefAr: "تقييم معيار CR-004 — التعايش مع رحلة ضيف الرحمن ورصد التجربة",
+      aiResultRefAr: "تقييم متطلب HAJ-EXP-04 — التعايش مع رحلة ضيف الرحمن ورصد التجربة",
       issueType: "wrong_analysis",
       descriptionAr:
         "نعتقد أن تغطية الرصد الميداني أعلى من 6 نقاط — تم رصد نقطة سابعة الأسبوع الماضي ولم تُحتسب.",

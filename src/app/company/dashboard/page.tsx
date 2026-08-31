@@ -3,25 +3,23 @@
 import Link from "next/link";
 import { useDemoStore } from "@/lib/store/demoStore";
 import { useCompanyCompliance } from "@/lib/hooks/useCompanyCompliance";
-import { PageHeader } from "@/components/ui/Card";
-import { KPICard } from "@/components/ui/KPICard";
-import { ScoreRing } from "@/components/ui/ScoreRing";
-import { RequirementCard } from "@/components/requirements/RequirementCard";
+import { displayRequirementId } from "@/lib/data/regulatory";
+import { PageHead, Panel, SectionTitle, AlertBanner, Chip } from "@/components/ui/kit";
+import { KpiTile, Donut, ProgressBar, BarChartH } from "@/components/ui/viz";
 import { AlertCard } from "@/components/alerts/AlertCard";
-import { RiskBadge } from "@/components/ui/Badge";
-import { RISK_LABEL } from "@/lib/labels";
-import type { RiskLevel } from "@/lib/types";
-
-const READINESS_TONE: Record<"good" | "warning" | "critical", string> = {
-  good: "text-[var(--color-status-compliant)]",
-  warning: "text-[var(--color-status-partial)]",
-  critical: "text-[var(--color-status-noncompliant)]",
-};
+import {
+  READINESS_INDEX_AR,
+  VERIFICATION_COVERAGE_AR,
+  STATUS_LABEL_AR,
+  STATUS_TONE,
+  show,
+} from "@/lib/ui/status";
 
 export default function CompanyDashboardPage() {
-  const { state, markAlertRead } = useDemoStore();
+  const { state } = useDemoStore();
   const {
-    requirements,
+    authoritiesView,
+    canonicalRequirements,
     profile,
     readinessValue,
     readinessAvailable,
@@ -30,214 +28,175 @@ export default function CompanyDashboardPage() {
     criticalBlockerCount,
     verificationGaps,
     regulatoryPendingCount,
+    applicabilityPendingCount,
+    verificationCoverage,
+    statusCounts,
   } = useCompanyCompliance();
 
   const pendingEvidence = state.evidence.filter(
-    (e) => e.status === "missing" || e.status === "needs_review" || e.status === "outdated"
+    (e) => e.status === "missing" || e.status === "needs_review" || e.status === "outdated",
   ).length;
   const openActions = state.actions.filter((a) => a.status !== "completed").length;
   const recentAlerts = [...state.alerts]
-    .sort((a, b) => (a.isRead === b.isRead ? 0 : a.isRead ? 1 : -1))
-    .slice(0, 4);
+    .sort((a, b) => Number(a.isRead) - Number(b.isRead))
+    .slice(0, 3);
+  const applicableCount = canonicalRequirements.filter(
+    (r) => r.applicability === "APPLICABLE",
+  ).length;
 
-  const riskCounts = requirements.reduce<Record<RiskLevel, number>>(
-    (acc, r) => {
-      acc[r.riskLevel] += 1;
-      return acc;
-    },
-    { critical: 0, high: 0, medium: 0, low: 0, none: 0 }
-  );
+  const statusRows = [
+    { labelAr: "غير ملتزم", value: statusCounts.NON_COMPLIANT, tone: "red" as const },
+    { labelAr: "ملتزم جزئيًا", value: statusCounts.PARTIALLY_COMPLIANT, tone: "amber" as const },
+    { labelAr: "بانتظار التحقق", value: statusCounts.PENDING_VERIFICATION, tone: "indigo" as const },
+    { labelAr: "ملتزم", value: statusCounts.COMPLIANT, tone: "green" as const },
+  ];
 
   return (
-    <div className="space-y-8">
-      <PageHeader
+    <div className="space-y-6">
+      <PageHead
         eyebrow={profile.seasonLabel}
         title={`مرحبًا، ${profile.nameAr}`}
-        descriptionAr="نظرة شاملة على وضع الامتثال الحالي — الجاهزية، الفجوات، والمخاطر، خلال ثوانٍ."
+        subtitle="نظرة شاملة على وضع الامتثال الحالي — الجاهزية، التحقق، الفجوات، والمخاطر."
       />
 
       {hasUnresolvedCriticalGate && (
-        <div className="rounded-xl border border-[var(--color-status-noncompliant)]/30 bg-[var(--color-status-noncompliant-bg)] px-5 py-4 flex items-start gap-3">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--color-status-noncompliant)"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className="mt-0.5 shrink-0"
-          >
-            <path d="M12 4 3 19h18z" />
-            <path d="M12 10v4M12 17h.01" />
-          </svg>
-          <div>
-            <p className="text-sm font-semibold text-[var(--color-status-noncompliant)]">
-              عائق حرج قائم — متطلب حرج بحالة غير ملتزم
-            </p>
-            <p className="text-xs text-[var(--color-ink-muted)] mt-1">
-              مؤشر جاهزية امتثال العام لا يُخفي متطلبًا حرجًا غير مستوفٍ. راجع المتطلبات الحرجة
-              قبل أي إجراء آخر.
-            </p>
-          </div>
-        </div>
+        <AlertBanner tone="red" title="عائق حرج قائم — متطلب حرج بحالة غير ملتزم">
+          {READINESS_INDEX_AR} العام لا يُخفي متطلبًا حرجًا غير مستوفٍ. راجع المتطلبات الحرجة قبل أي
+          إجراء آخر.
+        </AlertBanner>
       )}
 
-      {/* Top row: overall score + KPIs */}
-      <div className="grid lg:grid-cols-4 gap-4">
-        <div className="card p-6 flex items-center gap-5 lg:col-span-1">
-          <ScoreRing score={readinessAvailable ? readinessValue : null} label="مؤشر جاهزية امتثال" />
-          <div>
-            <p className="text-xs text-[var(--color-ink-muted)] mb-1">
-              مؤشر جاهزية امتثال (V1)
-            </p>
-            <p className={`text-sm font-semibold ${READINESS_TONE[readiness.tone]}`}>
-              {readiness.labelAr}
-            </p>
-          </div>
-        </div>
-
-        <div className="lg:col-span-3 grid sm:grid-cols-3 gap-4">
-          <KPICard
-            label="فجوات التحقق"
-            value={verificationGaps.length}toneClass="text-[var(--color-status-partial)]"
+      {/* KPI band + readiness donut */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <KpiTile
+            label={VERIFICATION_COVERAGE_AR}
+            value={show(verificationCoverage)}
+            icon="compliance"
           />
-          <KPICard
-            label="المعوّقات الحرجة"
-            value={criticalBlockerCount}
-            toneClass="text-[var(--color-status-noncompliant)]"/>
-          <KPICard
+          <KpiTile label="عوائق حرجة" value={criticalBlockerCount} icon="warning" tone="red" />
+          <KpiTile label="فجوات التحقق" value={verificationGaps.length} icon="risks" tone="amber" />
+          <KpiTile
             label="بانتظار تحقق تنظيمي"
-            value={regulatoryPendingCount}toneClass="text-[var(--color-status-review)]"
+            value={regulatoryPendingCount}
+            icon="reviews"
+            tone="indigo"
           />
-          <KPICard
-            label="الأدلة بحاجة متابعة"
-            value={pendingEvidence}toneClass="text-[var(--color-status-partial)]"
+          <KpiTile label="انطباق غير مؤكد" value={applicabilityPendingCount} icon="requirements" />
+          <KpiTile label="الأدلة بحاجة متابعة" value={pendingEvidence} icon="evidence" tone="amber" />
+        </div>
+        <Panel className="flex w-full flex-col items-center gap-3 lg:w-64">
+          <Donut
+            value={readinessAvailable ? readinessValue : null}
+            captionAr={READINESS_INDEX_AR}
           />
-          <KPICard
-            label="الإجراءات التصحيحية الجارية"
-            value={openActions}/>
-          <KPICard
-            label="عدد المعايير المقيّمة"
-            value={`${requirements.length}/5`}/>
+          <p className="text-xs font-medium text-[var(--color-ink)]">{READINESS_INDEX_AR}</p>
+          <p className="text-center text-[11px] leading-relaxed text-[var(--color-ink-muted)]">
+            {readiness.labelAr}
+          </p>
+        </Panel>
+      </div>
+
+      {/* canonical requirement overview — all authorities */}
+      <div>
+        <SectionTitle
+          hint={
+            <Link href="/company/compliance" className="font-semibold text-[var(--color-primary)] hover:underline">
+              عرض التفاصيل الكاملة ←
+            </Link>
+          }
+        >
+          نظرة عامة على المتطلبات
+        </SectionTitle>
+        <p className="mb-3 text-xs text-[var(--color-ink-muted)]">
+          {applicableCount} متطلبًا منطبقًا من {canonicalRequirements.length} عبر ثلاث جهات — الحالة
+          والجاهزية من محرك التحقق الحتمي، دون درجة رسمية.
+        </p>
+        <div className="grid gap-4 lg:grid-cols-3">
+          {authoritiesView.map((a) => (
+            <Panel key={a.id} className="space-y-2.5">
+              <p className="text-xs font-semibold text-[var(--color-ink)]">
+                {a.nameAr}
+                <span className="ms-1 font-normal text-[var(--color-ink-faint)]">
+                  ({a.requirements.length})
+                </span>
+              </p>
+              {a.requirements.map((r) => (
+                <div key={r.id} className="space-y-1.5 border-b border-[var(--color-border)] pb-2.5 last:border-0 last:pb-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-xs leading-snug text-[var(--color-ink)]">{r.titleAr}</span>
+                    <span className="shrink-0 text-sm font-bold tabular-nums text-[var(--color-ink)]">
+                      {r.applicability === "APPLICABLE" && r.readiness != null ? show(r.readiness) : "—"}
+                    </span>
+                  </div>
+                  <ProgressBar
+                    value={r.applicability === "APPLICABLE" ? r.readiness : null}
+                    tone={STATUS_TONE[r.status]}
+                  />
+                  <Chip tone={STATUS_TONE[r.status]} dot={false}>
+                    {STATUS_LABEL_AR[r.status]}
+                  </Chip>
+                </div>
+              ))}
+            </Panel>
+          ))}
         </div>
       </div>
 
-      {/* Five criteria overview */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold text-[var(--color-ink)]">
-              نظرة عامة على المعايير الخمسة
-            </h2>
-            <p className="text-sm text-[var(--color-ink-muted)] mt-0.5">
-              الحالة والجاهزية محسوبة بمحرك التحقق الحتمي. الأوزان الرسمية بيانات تعريفية فقط.
-            </p>
-          </div>
+      {/* bottom band */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Panel>
+          <SectionTitle>الإجراءات المفتوحة</SectionTitle>
+          {openActions === 0 ? (
+            <p className="text-xs text-[var(--color-ink-muted)]">لا توجد إجراءات مفتوحة حاليًا.</p>
+          ) : (
+            <ul className="space-y-3">
+              {state.actions
+                .filter((a) => a.status !== "completed")
+                .slice(0, 4)
+                .map((a) => (
+                  <li key={a.id} className="border-b border-[var(--color-border)] pb-3 last:border-0 last:pb-0">
+                    <p className="font-mono text-xs font-semibold text-[var(--color-ink-muted)]">
+                      {displayRequirementId(a.requirementId)}
+                    </p>
+                    <p className="mt-0.5 text-sm text-[var(--color-ink)]">{a.titleAr}</p>
+                  </li>
+                ))}
+            </ul>
+          )}
           <Link
-            href="/company/compliance"
-            className="text-sm font-medium text-[var(--color-primary)] hover:underline"
+            href="/company/improvement-plan"
+            className="mt-3 inline-block text-xs font-semibold text-[var(--color-primary)] hover:underline"
           >
-            عرض التفاصيل الكاملة ←
+            خطة التحسين ←
           </Link>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-          {requirements.map((r) => (
-            <RequirementCard key={r.id} requirement={r} compact />
-          ))}
-        </div>
-      </section>
+        </Panel>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Risk visualization */}
-        <section className="card p-5 lg:col-span-1">
-          <h2 className="text-base font-semibold text-[var(--color-ink)] mb-4">
-            توزيع المخاطر
-          </h2>
-          <div className="space-y-3">
-            {(["critical", "high", "medium", "low"] as RiskLevel[]).map((level) => (
-              <div key={level} className="flex items-center gap-3">
-                <div className="w-20 shrink-0">
-                  <RiskBadge level={level} size="sm" />
-                </div>
-                <div className="flex-1 h-2 rounded-full bg-[var(--color-border)] overflow-hidden">
-                  <div
-                    className="h-2 rounded-full"
-                    style={{
-                      width: `${(riskCounts[level] / requirements.length) * 100}%`,
-                      background:
-                        level === "critical"
-                          ? "var(--color-risk-critical)"
-                          : level === "high"
-                            ? "var(--color-risk-high)"
-                            : level === "medium"
-                              ? "var(--color-risk-medium)"
-                              : "var(--color-risk-low)",
-                    }}
-                  />
-                </div>
-                <span className="text-xs tabular-nums text-[var(--color-ink-muted)] w-4 text-left">
-                  {riskCounts[level]}
-                </span>
-              </div>
-            ))}
-          </div>
-          <Link
-            href="/company/gaps"
-            className="block mt-4 text-sm font-medium text-[var(--color-primary)] hover:underline"
+        <Panel>
+          <SectionTitle
+            hint={
+              <Link href="/company/alerts" className="font-semibold text-[var(--color-primary)] hover:underline">
+                الكل ←
+              </Link>
+            }
           >
-            عرض تحليل الفجوات والمخاطر ←
-          </Link>
-        </section>
-
-        {/* Recent alerts */}
-        <section className="card p-5 lg:col-span-1">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-[var(--color-ink)]">تنبيهات حديثة</h2>
-            <Link
-              href="/company/alerts"
-              className="text-xs font-medium text-[var(--color-primary)] hover:underline"
-            >
-              الكل ←
-            </Link>
-          </div>
+            تنبيهات حديثة
+          </SectionTitle>
           <div className="space-y-2.5">
             {recentAlerts.map((a) => (
-              <AlertCard key={a.id} alert={a} onMarkRead={markAlertRead} compact />
+              <AlertCard key={a.id} alert={a} compact />
             ))}
           </div>
-        </section>
+        </Panel>
 
-        {/* AI recommendations */}
-        <section className="card p-5 lg:col-span-1">
-          <h2 className="text-base font-semibold text-[var(--color-ink)] mb-1">
-            توصيات الذكاء الاصطناعي
-          </h2>
-          <p className="text-xs text-[var(--color-ink-muted)] mb-4">
-            توصيات تفسيرية مبنية على نتائج محرك الامتثال الحتمي.
-          </p>
-          <div className="space-y-3">
-            {requirements
-              .filter((r) => r.complianceStatus !== "compliant")
-              .sort((a, b) => a.score - b.score)
-              .slice(0, 3)
-              .map((r) => (
-                <div
-                  key={r.id}
-                  className="rounded-lg border border-[var(--color-border)] p-3 text-sm"
-                >
-                  <p className="text-[11px] font-mono text-[var(--color-ink-faint)] mb-1">
-                    {r.id} · {RISK_LABEL[r.riskLevel]} الخطورة
-                  </p>
-                  <p className="text-[var(--color-ink)] leading-relaxed">
-                    {r.recommendedActionAr}
-                  </p>
-                </div>
-              ))}
-          </div>
-        </section>
+        <Panel>
+          <SectionTitle>توزيع حالات التحقق</SectionTitle>
+          <BarChartH
+            rows={statusRows}
+            linkHref="/company/gaps"
+            linkLabel="تحليل الفجوات والمخاطر"
+          />
+        </Panel>
       </div>
     </div>
   );

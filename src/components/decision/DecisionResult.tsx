@@ -1,4 +1,5 @@
 import type { DecisionSimulationResult } from "@/lib/types";
+import { displayRequirementId } from "@/lib/data/regulatory";
 import { Card, SectionHeader } from "@/components/ui/Card";
 import { RiskBadge, ConfidenceBadge, SimulatedBadge } from "@/components/ui/Badge";
 import { CompareBar } from "@/components/ui/ScoreRing";
@@ -66,7 +67,7 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
             >
               <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
                 <span className="text-sm font-medium text-[var(--color-ink)]">
-                  {r.requirementId} — {r.requirementNameAr}
+                  {displayRequirementId(r.requirementId)} — {r.requirementNameAr}
                 </span>
                 <span className="flex items-center gap-2 text-xs">
                   <span className="tabular-nums text-[var(--color-ink-muted)]">

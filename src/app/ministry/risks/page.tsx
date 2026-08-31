@@ -1,60 +1,101 @@
 "use client";
 
-import { getMinistryCompanies } from "@/lib/data/ministryCompanies";
-import { useCompanyCompliance } from "@/lib/hooks/useCompanyCompliance";
-import { PageHeader, Card, SectionHeader } from "@/components/ui/Card";
-import { RiskMatrix } from "@/components/risk/RiskMatrix";
-import { RiskBadge, StatusBadge } from "@/components/ui/Badge";
 import Link from "next/link";
+import { useGovernmentPortfolio, type PortfolioRow } from "@/lib/hooks/useGovernmentPortfolio";
+import { PageHead, Panel, SectionTitle, Chip } from "@/components/ui/kit";
+import { KpiTile } from "@/components/ui/viz";
+import { READINESS_INDEX_AR, VERIFICATION_COVERAGE_AR, show } from "@/lib/ui/status";
 
-const RISK_ORDER = { critical: 0, high: 1, medium: 2, low: 3, none: 4 };
+// Deterministic ordering only — most critical blockers first, then most items
+// pending verification, then lowest available readiness. No invented risk tier.
+function rank(a: PortfolioRow, b: PortfolioRow): number {
+  if (b.criticalBlockerCount !== a.criticalBlockerCount)
+    return b.criticalBlockerCount - a.criticalBlockerCount;
+  if (b.pendingVerificationCount !== a.pendingVerificationCount)
+    return b.pendingVerificationCount - a.pendingVerificationCount;
+  const ar = a.readiness ?? -1;
+  const br = b.readiness ?? -1;
+  return ar - br;
+}
 
 export default function MinistryRisksPage() {
-  const companies = [...getMinistryCompanies()].sort(
-    (a, b) => RISK_ORDER[a.riskLevel] - RISK_ORDER[b.riskLevel]
-  );
-  const { risks } = useCompanyCompliance();
+  const p = useGovernmentPortfolio();
+  const ordered = [...p.rows].sort(rank);
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="المخاطر"
-        title="ترتيب الشركات حسب مستوى الخطر"
-        descriptionAr="تحديد أولويات المتابعة الرقابية بناءً على مستوى الخطر الحالي لكل شركة."
+      <PageHead
+        eyebrow="الجهات الحكومية"
+        title="أولويات المتابعة الرقابية (تجريبي)"
+        subtitle="ترتيب الشركات وفق إشارات حتمية فقط: العوائق الحرجة، البنود بانتظار التحقق، ثم الجاهزية المتاحة. لا يُحتسب تصنيف خطر ولا درجة رسمية."
       />
 
-      <Card>
-        <SectionHeader title="الشركات مرتبة حسب الخطورة" />
-        <div className="space-y-2">
-          {companies.map((c, idx) => (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiTile label="عدد الشركات" value={p.count} icon="companies" />
+        <KpiTile
+          label="بعائق حرج"
+          value={p.companiesWithCriticalBlocker}
+          icon="warning"
+          tone="red"
+        />
+        <KpiTile
+          label="بحاجة متابعة"
+          value={p.companiesNeedingAttention}
+          icon="risks"
+          tone="amber"
+        />
+        <KpiTile
+          label="بنود بانتظار التحقق"
+          value={p.totalPendingVerification}
+          icon="reviews"
+          tone="indigo"
+        />
+      </div>
+
+      <div>
+        <SectionTitle hint={`${ordered.length} شركة`}>الترتيب حسب الأولوية</SectionTitle>
+        <Panel className="space-y-2">
+          {ordered.map((c, i) => (
             <Link
-              key={c.id}
-              href={`/ministry/companies/${c.id}`}
-              className="flex items-center justify-between rounded-lg border border-[var(--color-border)] p-3 hover:bg-[var(--color-bg)] transition-colors"
+              key={c.companyId}
+              href={`/ministry/companies/${encodeURIComponent(c.companyId)}`}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-control)] border border-[var(--color-border)] p-3 transition-colors hover:bg-[var(--color-bg)]"
             >
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-[var(--color-ink-faint)] w-5">{idx + 1}</span>
-                <span className="text-sm font-medium text-[var(--color-ink)]">{c.nameAr}</span>
-                <StatusBadge status={c.status} size="sm" />
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-[var(--color-ink-muted)]">
-                  {c.criticalGaps} فجوة حرجة
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="w-5 shrink-0 text-xs text-[var(--color-ink-faint)]">{i + 1}</span>
+                <span className="truncate text-sm font-medium text-[var(--color-ink)]">
+                  {c.nameAr}
                 </span>
-                <RiskBadge level={c.riskLevel} />
+                {c.criticalBlockerCount > 0 ? (
+                  <Chip tone="red">عائق حرج ({c.criticalBlockerCount})</Chip>
+                ) : c.needsAttention ? (
+                  <Chip tone="amber">بحاجة متابعة</Chip>
+                ) : (
+                  <Chip tone="neutral" dot={false}>
+                    لا توجد عوائق
+                  </Chip>
+                )}
+              </div>
+              <div className="flex items-center gap-4 text-xs text-[var(--color-ink-muted)]">
+                <span>
+                  بانتظار التحقق: <b className="tabular-nums">{c.pendingVerificationCount}</b>
+                </span>
+                <span>
+                  {VERIFICATION_COVERAGE_AR}: <b className="tabular-nums">{show(c.coverage)}</b>
+                </span>
+                <span>
+                  {READINESS_INDEX_AR}: <b className="tabular-nums">{show(c.readiness)}</b>
+                </span>
               </div>
             </Link>
           ))}
-        </div>
-      </Card>
+        </Panel>
+      </div>
 
-      <Card>
-        <SectionHeader
-          title="مصفوفة المخاطر التفصيلية — شركة النور"
-          subtitle="نموذج تفصيلي على مستوى المعيار الواحد لأول شركة مقيّمة بالكامل."
-        />
-        <RiskMatrix risks={risks} />
-      </Card>
+      <p className="text-xs text-[var(--color-ink-muted)]">
+        نقص الأدلة أو وجود بنود بانتظار التحقق لا يعني عدم امتثال. التقييم التفصيلي على مستوى كل
+        متطلب متاح من صفحة الشركة.
+      </p>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { ConfidenceBadge, NeedsHumanReviewBadge } from "@/components/ui/Badge";
 import { EVIDENCE_VALIDATION_LABEL } from "@/lib/labels";
 import { DisputeReportButton } from "@/components/disputes/DisputeReportButton";
 import { NavIcon } from "@/components/layout/NavIcon";
+import { displayRequirementId } from "@/lib/data/regulatory";
 
 const FILE_TYPE_LABEL: Record<Evidence["fileType"], string> = {
   pdf: "PDF",
@@ -53,7 +54,7 @@ export function EvidenceCard({
             </p>
             <p className="text-xs text-[var(--color-ink-faint)] mt-0.5">
               {evidence.uploadedAtLabel} · {evidence.sizeLabel} ·{" "}
-              {evidence.requirementIds.join("، ")}
+              {evidence.requirementIds.map(displayRequirementId).join("، ")}
             </p>
           </div>
         </div>

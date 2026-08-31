@@ -1,45 +1,81 @@
 "use client";
 
 import { useCompanyCompliance } from "@/lib/hooks/useCompanyCompliance";
-import { PageHeader } from "@/components/ui/Card";
-import { RequirementCard } from "@/components/requirements/RequirementCard";
-import { DemoConfigBadge } from "@/components/ui/Badge";
-import { ScoreRing } from "@/components/ui/ScoreRing";
+import { PageHead, Panel, Chip, SectionTitle } from "@/components/ui/kit";
+import { Donut } from "@/components/ui/viz";
+import { CanonicalRequirementCard } from "@/components/requirements/CanonicalRequirementCard";
+import {
+  OFFICIAL_WEIGHT_NOTE_AR,
+  READINESS_INDEX_AR,
+  VERIFICATION_COVERAGE_AR,
+  show,
+} from "@/lib/ui/status";
 
 export default function CompliancePage() {
-  const { requirements, readinessValue, readinessAvailable, readiness } = useCompanyCompliance();
+  const {
+    authoritiesView,
+    canonicalRequirements,
+    readinessValue,
+    readinessAvailable,
+    readiness,
+    verificationCoverage,
+    hasUnresolvedCriticalGate,
+  } = useCompanyCompliance();
+
+  const total = canonicalRequirements.length;
+  const applicable = canonicalRequirements.filter((r) => r.applicability === "APPLICABLE").length;
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHead
         eyebrow="الامتثال"
-        title="المعايير الخمسة المعتمدة للنموذج التجريبي"
-        descriptionAr="تقييم مفصّل لكل معيار: النتيجة، الحالة، مستوى الخطر، حالة الأدلة، وسبب الفجوة إن وُجدت."
-        action={<DemoConfigBadge size="md" />}
+        title="المتطلبات التنظيمية المعتمدة"
+        subtitle={`${total} متطلبًا عبر ثلاث جهات تنظيمية — الحالة والجاهزية من محرك التحقق الحتمي على ملف الشركة التجريبي، دون درجة رسمية.`}
+        actions={
+          <Chip tone="amber" dot={false}>
+            تكوين تجريبي — غير معتمد رسميًا
+          </Chip>
+        }
       />
 
-      <div className="card p-5 flex flex-wrap items-center gap-6">
-        <ScoreRing
-          score={readinessAvailable ? readinessValue : null}
-          size={96}
-          strokeWidth={10}
-          label="مؤشر جاهزية امتثال"
+      <Panel className="flex flex-wrap items-center gap-6">
+        <Donut
+          value={readinessAvailable ? readinessValue : null}
+          captionAr={READINESS_INDEX_AR}
+          size={104}
+          stroke={11}
         />
-        <div>
-          <p className="text-sm font-semibold text-[var(--color-ink)]">{readiness.labelAr}</p>
-          <p className="text-xs text-[var(--color-ink-muted)] mt-1 max-w-md leading-relaxed">
-            مؤشر جاهزية امتثال (V1): متوسط غير مرجّح لجاهزية المتطلبات المنطبقة القابلة للتقييم
-            فقط، محسوب بمحرك التحقق الحتمي. لا يُستخدم أي وزن في حسابه، والأوزان الرسمية المنشورة
-            تُعرض كبيانات تعريفية فقط. لا توجد درجة رسمية.
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-[var(--color-ink)]">
+            {hasUnresolvedCriticalGate
+              ? "يتطلب تدخلاً عاجلاً — فجوة حرجة غير محلولة"
+              : readiness.labelAr}
           </p>
+          <p className="mt-1 max-w-xl text-xs leading-relaxed text-[var(--color-ink-muted)]">
+            {READINESS_INDEX_AR}: متوسط غير مرجّح لجاهزية المتطلبات المنطبقة القابلة للتقييم، محسوب
+            حتميًا. {OFFICIAL_WEIGHT_NOTE_AR} لا توجد درجة إجمالية رسمية.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-4 text-xs text-[var(--color-ink-muted)]">
+            <span>
+              {VERIFICATION_COVERAGE_AR}: <b className="tabular-nums">{show(verificationCoverage)}</b>
+            </span>
+            <span>
+              المتطلبات المنطبقة: <b className="tabular-nums">{applicable}</b> من {total}
+            </span>
+          </div>
         </div>
-      </div>
+      </Panel>
 
-      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {requirements.map((r) => (
-          <RequirementCard key={r.id} requirement={r} />
-        ))}
-      </div>
+      {authoritiesView.map((a) => (
+        <div key={a.id}>
+          <SectionTitle hint={`${a.requirements.length} متطلب`}>{a.nameAr}</SectionTitle>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {a.requirements.map((r) => (
+              <CanonicalRequirementCard key={r.id} r={r} />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

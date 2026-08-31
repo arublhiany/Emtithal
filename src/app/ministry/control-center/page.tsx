@@ -2,117 +2,180 @@
 
 import Link from "next/link";
 import { useDemoStore } from "@/lib/store/demoStore";
+import { useGovernmentPortfolio } from "@/lib/hooks/useGovernmentPortfolio";
+import { useRegMgmt } from "@/components/regmgmt/RegMgmtProvider";
 import { useCompanyCompliance } from "@/lib/hooks/useCompanyCompliance";
-import { getMinistryCompanies } from "@/lib/data/ministryCompanies";
-import { getRequirements } from "@/lib/data/requirements";
-import { PageHeader, Card, SectionHeader } from "@/components/ui/Card";
-import { KPICard } from "@/components/ui/KPICard";
+import { PageHead, Panel, SectionTitle, Chip } from "@/components/ui/kit";
+import { KpiTile, ProgressBar } from "@/components/ui/viz";
 import { CompanyTable } from "@/components/ministry/CompanyTable";
 import { AlertCard } from "@/components/alerts/AlertCard";
-import { GapCard } from "@/components/gaps/GapCard";
-import { DEMO_COMPANY_ID } from "@/lib/data/company";
+import { READINESS_INDEX_AR, STATUS_LABEL_AR, STATUS_TONE, show } from "@/lib/ui/status";
+import { CANONICAL_DEMO_COMPANY_ID } from "@/lib/data/demo/companyProfile";
 
 export default function MinistryControlCenterPage() {
-  const companies = getMinistryCompanies();
-  const requirements = getRequirements();
-  const { gaps } = useCompanyCompliance();
-  const { state, markAlertRead } = useDemoStore();
+  const portfolio = useGovernmentPortfolio();
+  const { state } = useRegMgmt();
+  const { state: demo } = useDemoStore();
+  const { authoritiesView } = useCompanyCompliance();
 
-  const avgScore = Math.round(
-    companies.reduce((sum, c) => sum + c.overallScore, 0) / companies.length
-  );
-  const highRiskCompanies = companies.filter(
-    (c) => c.riskLevel === "critical" || c.riskLevel === "high"
-  );
-  const attentionCompanies = companies.filter(
-    (c) => c.criticalGaps > 0 || c.status === "non_compliant"
-  );
-  const totalPendingVerification = companies.reduce((s, c) => s + c.pendingVerification, 0);
+  const drafts = state.managed.filter((m) => m.draftVersion != null).length;
+  const activeManaged = state.managed.filter((m) => m.activeVersion != null).length;
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        eyebrow="مركز التحكم الرقابي"
-        title="نظرة شاملة على امتثال الشركات"
-        descriptionAr="متابعة مستوى الامتثال عبر الشركات، تحديد الشركات عالية الخطورة، ومراقبة الفجوات المتكررة والمعايير التنظيمية."
+    <div className="space-y-6">
+      <PageHead
+        eyebrow="الجهات الحكومية"
+        title="مركز التحكم الرقابي"
+        subtitle="متابعة جاهزية الامتثال عبر الشركات، وإدارة دورة حياة المتطلبات — على بيانات تجريبية معتمدة."
       />
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard label="متوسط الامتثال" value={avgScore} suffix="/ 100" />
-        <KPICard
-          label="شركات عالية الخطورة"
-          value={highRiskCompanies.length}toneClass="text-[var(--color-status-noncompliant)]"
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiTile
+          label={`متوسط ${READINESS_INDEX_AR} (تجريبي)`}
+          value={show(portfolio.portfolioReadiness)}
+          suffix="من 100"
+          icon="control"
         />
-        <KPICard
-          label="شركات تحتاج متابعة"
-          value={attentionCompanies.length}toneClass="text-[var(--color-status-partial)]"
+        <KpiTile
+          label="شركات بحاجة متابعة"
+          value={portfolio.companiesNeedingAttention}
+          icon="companies"
+          tone="amber"
         />
-        <KPICard label="بانتظار التحقق" value={totalPendingVerification} />
+        <KpiTile
+          label="شركات بعائق حرج"
+          value={portfolio.companiesWithCriticalBlocker}
+          icon="warning"
+          tone="red"
+        />
+        <KpiTile
+          label="بانتظار التحقق"
+          value={portfolio.totalPendingVerification}
+          icon="reviews"
+          tone="indigo"
+        />
       </div>
 
-      <Card>
-        <SectionHeader
-          title="نظرة عامة على الشركات"
-          subtitle={`${companies.length} شركات مسجلة ضمن النموذج التجريبي — بيانات ${companies.length - 1} منها ملخّصة، وبيانات تفصيلية على مستوى المعيار متاحة لشركة النور.`}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <KpiTile label="متطلبات مُدارة سارية" value={activeManaged} icon="requirements" />
+        <KpiTile
+          label="مسودات مفتوحة"
+          value={drafts}
+          icon="document"
+          tone={drafts > 0 ? "amber" : "neutral"}
         />
-        <CompanyTable companies={companies} />
-      </Card>
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card>
-          <SectionHeader
-            title="اتجاهات المعايير — نموذج تفصيلي (شركة النور)"
-            subtitle="أول شركة ذات تقييم تفصيلي كامل على مستوى المعايير الخمسة."
-          />
-          <div className="space-y-2.5">
-            {requirements.map((r) => (
-              <Link
-                key={r.id}
-                href={`/ministry/companies/${DEMO_COMPANY_ID}`}
-                className="flex items-center justify-between rounded-lg border border-[var(--color-border)] p-3 hover:bg-[var(--color-bg)] transition-colors"
-              >
-                <span className="text-sm text-[var(--color-ink)]">
-                  {r.id} — {r.nameAr}
-                </span>
-                <span className="text-sm font-semibold tabular-nums text-[var(--color-ink)]">
-                  {r.score}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </Card>
-
-        <Card>
-          <SectionHeader
-            title="فجوات ذات أولوية"
-            subtitle="من الشركة ذات البيانات التفصيلية المتاحة حاليًا."
-          />
-          <div className="space-y-3 max-h-[420px] overflow-y-auto pl-1">
-            {gaps.slice(0, 2).map((g) => (
-              <GapCard key={g.id} gap={g} />
-            ))}
-          </div>
-        </Card>
+        <KpiTile label="إشعارات تنظيمية مُنشأة" value={state.notifications.length} icon="alerts" />
       </div>
 
-      <Card>
-        <SectionHeader
-          title="تنبيهات حديثة"
-          action={
-            <Link
-              href="/ministry/alerts"
-              className="text-xs font-medium text-[var(--color-primary)] hover:underline"
-            >
-              الكل ←
+      <div>
+        <SectionTitle
+          hint={
+            <Link href="/ministry/companies" className="font-semibold text-[var(--color-primary)] hover:underline">
+              كل الشركات ←
             </Link>
           }
-        />
-        <div className="grid sm:grid-cols-2 gap-3">
-          {state.alerts.slice(0, 4).map((a) => (
-            <AlertCard key={a.id} alert={a} onMarkRead={markAlertRead} compact />
-          ))}
-        </div>
-      </Card>
+        >
+          نظرة عامة على الشركات (تجريبي)
+        </SectionTitle>
+        <CompanyTable rows={portfolio.rows} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Panel>
+          <SectionTitle
+            hint={
+              <Link
+                href={`/ministry/companies/${CANONICAL_DEMO_COMPANY_ID}`}
+                className="font-semibold text-[var(--color-primary)] hover:underline"
+              >
+                التفاصيل ←
+              </Link>
+            }
+          >
+            جاهزية المتطلبات — الشركة الأساسية في النموذج
+          </SectionTitle>
+          <div className="space-y-4">
+            {authoritiesView.map((a) => (
+              <div key={a.id} className="space-y-2">
+                <p className="text-[11px] font-semibold text-[var(--color-ink-faint)]">
+                  {a.nameAr}
+                </p>
+                {a.requirements.map((r) => {
+                  const v = r.applicability === "APPLICABLE" ? r.readiness : null;
+                  return (
+                    <div key={r.id} className="space-y-1">
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate text-[var(--color-ink)]">
+                          <span className="font-mono text-[var(--color-ink-faint)]">{r.id}</span> —{" "}
+                          {r.titleAr}
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          <Chip tone={STATUS_TONE[r.status]} dot={false}>
+                            {STATUS_LABEL_AR[r.status]}
+                          </Chip>
+                          <span className="font-semibold tabular-nums text-[var(--color-ink)]">
+                            {v != null ? show(v) : "—"}
+                          </span>
+                        </span>
+                      </div>
+                      <ProgressBar value={v} tone={STATUS_TONE[r.status]} />
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel>
+          <SectionTitle
+            hint={
+              <Link href="/ministry/alerts" className="font-semibold text-[var(--color-primary)] hover:underline">
+                الكل ←
+              </Link>
+            }
+          >
+            تنبيهات حديثة
+          </SectionTitle>
+          <div className="space-y-2.5">
+            {demo.alerts.slice(0, 4).map((a) => (
+              <AlertCard key={a.id} alert={a} compact />
+            ))}
+          </div>
+        </Panel>
+      </div>
+
+      <Panel>
+        <SectionTitle
+          hint={
+            <Link href="/ministry/requirements" className="font-semibold text-[var(--color-primary)] hover:underline">
+              إدارة المتطلبات ←
+            </Link>
+          }
+        >
+          التغييرات التنظيمية الأخيرة
+        </SectionTitle>
+        {state.notifications.length === 0 ? (
+          <p className="text-xs text-[var(--color-ink-muted)]">
+            لم تُنشأ إشعارات تغيير تنظيمي بعد. تُنشأ الإشعارات تلقائيًا للشركات المتأثرة فقط عند تفعيل
+            نسخة جديدة أو إلغاء متطلب.
+          </p>
+        ) : (
+          <ul className="space-y-2 text-xs">
+            {state.notifications
+              .slice(-5)
+              .reverse()
+              .map((n) => (
+                <li key={n.id} className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium text-[var(--color-ink)]">{n.titleAr}</span>
+                  <span className="text-[var(--color-ink-faint)]">
+                    {n.requirementId} · للشركة {n.companyId}
+                  </span>
+                </li>
+              ))}
+          </ul>
+        )}
+      </Panel>
     </div>
   );
 }

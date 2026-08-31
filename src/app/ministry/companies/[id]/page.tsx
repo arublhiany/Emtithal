@@ -2,128 +2,71 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { getMinistryCompanies } from "@/lib/data/ministryCompanies";
-import { useCompanyCompliance } from "@/lib/hooks/useCompanyCompliance";
-import { DEMO_COMPANY_ID } from "@/lib/data/company";
-import { PageHeader, Card, SectionHeader } from "@/components/ui/Card";
-import { StatusBadge, RiskBadge } from "@/components/ui/Badge";
-import { ScoreRing } from "@/components/ui/ScoreRing";
-import { RequirementCard } from "@/components/requirements/RequirementCard";
-import { GapCard } from "@/components/gaps/GapCard";
+import { useGovernmentPortfolio } from "@/lib/hooks/useGovernmentPortfolio";
+import { PageHead, Panel, EmptyState } from "@/components/ui/kit";
+import { KpiTile } from "@/components/ui/viz";
+import { READINESS_INDEX_AR, VERIFICATION_COVERAGE_AR, show } from "@/lib/ui/status";
 
 export default function MinistryCompanyDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
-  const company = getMinistryCompanies().find((c) => c.id === id);
-  if (!company) return notFound();
+  const { id: raw } = use(params);
+  const id = decodeURIComponent(raw);
+  const { rows } = useGovernmentPortfolio();
+  const c = rows.find((r) => r.companyId === id) ?? null;
 
-  const isDetailedCompany = id === DEMO_COMPANY_ID;
+  if (!c) {
+    return (
+      <div>
+        <PageHead eyebrow="الجهات الحكومية" title="الشركة غير موجودة" />
+        <EmptyState title="لا توجد شركة بهذا المعرّف ضمن المحفظة التجريبية." hint={id} />
+        <Link
+          href="/ministry/companies"
+          className="mt-4 inline-block text-sm font-semibold text-[var(--color-primary)]"
+        >
+          ← العودة للمحفظة
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      <PageHead
+        eyebrow="الجهات الحكومية · شركة (تجريبي)"
+        title={c.nameAr}
+        subtitle="ملخّص الجاهزية الحتمي للشركة — لا يُحتسب أي تقييم رسمي، ونقص الأدلة لا يعني عدم امتثال."
+      />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiTile label={READINESS_INDEX_AR} value={show(c.readiness)} suffix="من 100" icon="control" />
+        <KpiTile label={VERIFICATION_COVERAGE_AR} value={show(c.coverage)} icon="compliance" />
+        <KpiTile
+          label="عوائق حرجة"
+          value={c.criticalBlockerCount}
+          icon="warning"
+          tone={c.criticalBlockerCount > 0 ? "red" : "neutral"}
+        />
+        <KpiTile label="بانتظار التحقق" value={c.pendingVerificationCount} icon="reviews" tone="indigo" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <KpiTile label="متطلبات غير محسومة تنظيميًا" value={c.regulatoryPendingCount} icon="reviews" />
+        <KpiTile label="انطباق غير مؤكد" value={c.applicabilityPendingCount} icon="requirements" />
+      </div>
+      <Panel>
+        <p className="text-xs leading-relaxed text-[var(--color-ink-muted)]">
+          بيانات هذه الشركة مشتقة من ملف الشركة التجريبي الوحيد المعتمد مع اختلافات في الحقائق
+          المُعلنة، وتُشغَّل عبر محرك التحقق الحتمي. التقييم التفصيلي على مستوى كل متطلب متاح للشركة
+          الأساسية في النموذج.
+        </p>
+      </Panel>
       <Link
         href="/ministry/companies"
-        className="text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+        className="inline-block text-sm font-semibold text-[var(--color-primary)]"
       >
-        ← العودة إلى الشركات
+        ← العودة للمحفظة
       </Link>
-
-      <PageHeader
-        eyebrow="ملف الشركة"
-        title={company.nameAr}
-        action={
-          <div className="flex items-center gap-2">
-            <StatusBadge status={company.status} />
-            <RiskBadge level={company.riskLevel} />
-          </div>
-        }
-      />
-
-      {isDetailedCompany ? (
-        <DetailedCompanyView />
-      ) : (
-        <Card>
-          <SectionHeader title="ملخص الامتثال" />
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <SummaryStat label="نسبة الامتثال" value={company.overallScore} />
-            <SummaryStat label="فجوات حرجة" value={company.criticalGaps} />
-            <SummaryStat label="بانتظار التحقق" value={company.pendingVerification} />
-            <SummaryStat label="إجراءات مفتوحة" value={company.correctiveActionsOpen} />
-          </div>
-          <div className="rounded-lg bg-[var(--color-bg)] p-3 text-xs text-[var(--color-ink-muted)] leading-relaxed">
-            هذه الشركة ضمن بيانات النموذج التجريبي بمستوى ملخّص فقط. البيانات التفصيلية على
-            مستوى المعيار الواحد متاحة حاليًا لشركة النور لخدمات الحج كنموذج تطبيقي كامل ضمن
-            هذا العرض.
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-function SummaryStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-[var(--color-border)] p-4">
-      <p className="text-2xl font-bold tabular-nums text-[var(--color-ink)]">{value}</p>
-      <p className="text-xs text-[var(--color-ink-muted)] mt-1">{label}</p>
-    </div>
-  );
-}
-
-function DetailedCompanyView() {
-  const { requirements, gaps, profile, readinessValue, readinessAvailable, readiness } =
-    useCompanyCompliance();
-
-  return (
-    <div className="space-y-6">
-      <Card className="flex flex-wrap items-center gap-6">
-        <ScoreRing
-          score={readinessAvailable ? readinessValue : null}
-          size={100}
-          strokeWidth={10}
-          label="مؤشر جاهزية امتثال"
-        />
-        <div className="flex-1 min-w-[200px]">
-          <p className="text-sm font-semibold text-[var(--color-ink)]">{readiness.labelAr}</p>
-          <p className="text-xs text-[var(--color-ink-muted)] mt-1">
-            {profile.city} · {profile.pilgrimsServed.toLocaleString("ar")} ضيف · {profile.workforceSize} موظف
-          </p>
-        </div>
-        <div className="flex gap-4 text-center">
-          {profile.capabilityIndicators.slice(0, 3).map((c) => (
-            <div key={c.key}>
-              <p className="text-lg font-bold tabular-nums text-[var(--color-ink)]">{c.value}</p>
-              <p className="text-[10px] text-[var(--color-ink-muted)] whitespace-nowrap">
-                {c.labelAr}
-              </p>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <div>
-        <h2 className="text-base font-semibold text-[var(--color-ink)] mb-3">المعايير الخمسة</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-          {requirements.map((r) => (
-            <RequirementCard key={r.id} requirement={r} compact />
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h2 className="text-base font-semibold text-[var(--color-ink)] mb-3">
-          الفجوات المكتشفة ({gaps.length})
-        </h2>
-        <div className="grid lg:grid-cols-2 gap-4">
-          {gaps.map((g) => (
-            <GapCard key={g.id} gap={g} />
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

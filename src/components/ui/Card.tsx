@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { PageHead, SectionTitle } from "@/components/ui/kit";
 
 export function Card({
   children,
@@ -12,6 +15,7 @@ export function Card({
   return <div className={`card ${padding} ${className}`}>{children}</div>;
 }
 
+/** Kept for source compatibility — delegates to the unified kit primitives. */
 export function SectionHeader({
   title,
   subtitle,
@@ -22,14 +26,9 @@ export function SectionHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 mb-4">
-      <div>
-        <h2 className="text-lg font-semibold text-[var(--color-ink)]">{title}</h2>
-        {subtitle && (
-          <p className="text-sm text-[var(--color-ink-muted)] mt-0.5">{subtitle}</p>
-        )}
-      </div>
-      {action}
+    <div className="mb-4">
+      <SectionTitle hint={subtitle}>{title}</SectionTitle>
+      {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }
@@ -44,16 +43,17 @@ export function EmptyState({
   descriptionAr?: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center py-12 px-6">
+    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
       {icon && <div className="mb-3 text-[var(--color-ink-faint)]">{icon}</div>}
       <p className="font-medium text-[var(--color-ink)]">{title}</p>
       {descriptionAr && (
-        <p className="text-sm text-[var(--color-ink-muted)] mt-1 max-w-sm">{descriptionAr}</p>
+        <p className="mt-1 max-w-sm text-sm text-[var(--color-ink-muted)]">{descriptionAr}</p>
       )}
     </div>
   );
 }
 
+/** Kept for source compatibility — delegates to the unified kit `PageHead`. */
 export function PageHeader({
   eyebrow,
   title,
@@ -65,22 +65,5 @@ export function PageHeader({
   descriptionAr?: string;
   action?: ReactNode;
 }) {
-  return (
-    <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-      <div>
-        {eyebrow && (
-          <p className="text-xs font-medium tracking-wide text-[var(--color-accent-dark)] mb-1">
-            {eyebrow}
-          </p>
-        )}
-        <h1 className="text-2xl font-bold text-[var(--color-ink)]">{title}</h1>
-        {descriptionAr && (
-          <p className="text-sm text-[var(--color-ink-muted)] mt-1.5 max-w-2xl leading-relaxed">
-            {descriptionAr}
-          </p>
-        )}
-      </div>
-      {action}
-    </div>
-  );
+  return <PageHead eyebrow={eyebrow} title={title} subtitle={descriptionAr} actions={action} />;
 }

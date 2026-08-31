@@ -28,14 +28,24 @@ function seed(): DemoState {
 }
 
 test("storage key and legacy keys reflect the version bump", () => {
-  assert.equal(SCHEMA_VERSION, 2);
-  assert.match(STORAGE_KEY, /v2$/);
+  assert.equal(SCHEMA_VERSION, 3);
+  assert.match(STORAGE_KEY, /v3$/);
   const legacyKeys: readonly string[] = LEGACY_STORAGE_KEYS;
   assert.ok(legacyKeys.includes("emtithal-demo-state-v1"));
+  assert.ok(legacyKeys.includes("emtithal-demo-state-v2"));
   assert.ok(!legacyKeys.includes(STORAGE_KEY));
 });
 
-test("a valid v2 envelope round-trips and is accepted", () => {
+test("a stale v2 envelope is rejected on the v3 bump and falls back to the seed", () => {
+  const stale = { ...seed(), selectedMinistryCompanyId: "company-alnoor" };
+  const raw = JSON.stringify({ schemaVersion: 2, state: stale });
+  const result = deserialize(raw, seed());
+  assert.equal(result.rejected, true);
+  assert.equal(result.reason, "version_mismatch");
+  assert.equal(result.state.selectedMinistryCompanyId, "company-demo"); // the fresh seed
+});
+
+test("a valid current-version envelope round-trips and is accepted", () => {
   const s = seed();
   s.view = "company";
   s.selectedMinistryCompanyId = "company-x";

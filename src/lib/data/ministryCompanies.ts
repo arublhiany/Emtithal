@@ -1,8 +1,9 @@
 // =============================================================================
-// Ministry Control Center — portfolio of companies.
-// The demo company (شركة النور) is computed live from the compliance engine;
-// the remaining companies are static illustrative summaries so the Ministry
-// screens can demonstrate portfolio-level monitoring. All are fictional.
+// Ministry Control Center — legacy portfolio fixture (compat-only; the live
+// government screens now use `useGovernmentPortfolio`). The primary demo
+// company row is computed live from the compliance engine and follows the
+// canonical identity in `@/lib/data/company`; the remaining rows are static
+// illustrative summaries. All are fictional.
 // =============================================================================
 
 import type { MinistryCompanySummary } from "@/lib/types";

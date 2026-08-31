@@ -49,6 +49,16 @@ export function toLegacyRequirementId(canonicalId: string): string | undefined {
   return ALL_REQUIREMENTS.find((r) => r.id === canonicalId)?.legacyIds[0];
 }
 
+/**
+ * Canonical ID for display/links. Maps a legacy `CR-00x` reference held in the
+ * demo operational fixtures to the canonical matrix ID; passes an already
+ * canonical ID (or an unknown one) through unchanged. The UI never shows a
+ * legacy ID as the primary identifier.
+ */
+export function displayRequirementId(idOrLegacy: string): string {
+  return resolveRequirementId(idOrLegacy) ?? idOrLegacy;
+}
+
 /** Records the matrix leaves underspecified on a structural §16 field. */
 export function getUnresolvedRequirements(): RegulatoryRequirement[] {
   return getRegulatoryRequirements().filter((r) => r.resolution === "UNRESOLVED_REQUIREMENT");
