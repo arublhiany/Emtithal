@@ -62,10 +62,18 @@ export type ActionPriority = "critical" | "high" | "medium" | "low";
  * @deprecated use the canonical `CompanyUserRole`.
  */
 export type CompanyRole =
+  | "company_representative" // ممثل الشركة — the canonical Finalist company-facing role (Phase 10)
   | "compliance_officer" // مسؤول الامتثال
   | "operations_manager" // مدير العمليات
   | "decision_maker" // صانع القرار
   | "ministry_user"; // مستخدم الوزارة / الجهة الرقابية
+
+/**
+ * The canonical Finalist company-facing role. The multi-role legacy values
+ * above remain only for pre-Phase-10 screens; the approved landing enters as
+ * this single role with no role picker.
+ */
+export const COMPANY_REPRESENTATIVE_ROLE: CompanyRole = "company_representative";
 
 export type StandardLifecycleStatus =
   | "draft"

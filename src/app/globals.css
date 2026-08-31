@@ -1,58 +1,85 @@
 @import "tailwindcss";
 
 :root {
-  /* Base surfaces */
-  --color-bg: #faf8f2;
+  /* ===================================================================
+     AUTHORITATIVE BRAND PALETTE (product-owner supplied — exact values).
+     Do NOT approximate. All other tokens derive from these three.
+     =================================================================== */
+  --brand-ink: #081e0d; /* darkest green — primary text / deepest surface */
+  --brand-green: #263f38; /* deep green — primary brand / actions */
+  --brand-neutral: #dddad5; /* warm light neutral — dividers / soft surfaces */
+
+  /* Derived brand steps (carefully chosen tints/shades of the three above) */
+  --brand-green-hover: #1c3029; /* pressed/hover of --brand-green */
+  --brand-green-tint: #e9efec; /* very light wash of --brand-green */
+  --brand-green-tint-strong: #cfe0d9;
+  --brand-neutral-strong: #c8c4bc; /* stronger divider */
+  --brand-paper: #f7f6f2; /* page ground, harmonized with --brand-neutral */
+
+  /* Base surfaces (mapped to brand) */
+  --color-bg: var(--brand-paper);
   --color-surface: #ffffff;
   --color-surface-raised: #ffffff;
-  --color-border: #e6e1d3;
-  --color-border-strong: #d8d0ba;
+  --color-border: var(--brand-neutral);
+  --color-border-strong: var(--brand-neutral-strong);
 
-  /* Typography */
-  --color-ink: #23261f;
-  --color-ink-muted: #5c6259;
-  --color-ink-faint: #8a8f80;
+  /* Typography (mapped to brand) */
+  --color-ink: var(--brand-ink);
+  --color-ink-muted: #59605a;
+  --color-ink-faint: #8b9089;
 
-  /* Brand: deep official green */
-  --color-primary: #0d3d2e;
-  --color-primary-dark: #082a20;
-  --color-primary-hover: #0f4a37;
-  --color-primary-tint: #e7f0ea;
-  --color-primary-tint-strong: #cfe3d6;
+  /* Brand: deep official green (mapped to brand) */
+  --color-primary: var(--brand-green);
+  --color-primary-dark: var(--brand-ink);
+  --color-primary-hover: var(--brand-green-hover);
+  --color-primary-tint: var(--brand-green-tint);
+  --color-primary-tint-strong: var(--brand-green-tint-strong);
 
-  /* Accent: sand / gold */
-  --color-accent: #b8863a;
-  --color-accent-dark: #96702c;
-  --color-accent-tint: #f6ecd8;
+  /* Accent: warm ochre — a warning-family accent harmonized with the green */
+  --color-accent: #9a6b1e;
+  --color-accent-dark: #7d5516;
+  --color-accent-tint: #f4ead6;
 
-  /* Status */
-  --color-status-compliant: #1e7a4c;
-  --color-status-compliant-bg: #e7f5ec;
-  --color-status-partial: #a9711b;
-  --color-status-partial-bg: #fbf0d9;
-  --color-status-noncompliant: #b3261e;
-  --color-status-noncompliant-bg: #fbeaea;
-  --color-status-review: #4c4a91;
-  --color-status-review-bg: #edecf9;
-  --color-status-notassessed: #6b7280;
-  --color-status-notassessed-bg: #f1f1ee;
+  /* Status — semantic, tuned to sit with the brand green (not pure/vivid) */
+  --color-status-compliant: #2e6b49;
+  --color-status-compliant-bg: #e7f1ea;
+  --color-status-partial: #8f6417;
+  --color-status-partial-bg: #f6ecd7;
+  --color-status-noncompliant: #a5322a;
+  --color-status-noncompliant-bg: #f8e7e5;
+  --color-status-review: #4a4a86;
+  --color-status-review-bg: #ecebf6;
+  --color-status-notassessed: #6b7068;
+  --color-status-notassessed-bg: #f0efeb;
 
-  /* Risk */
-  --color-risk-critical: #8f1f1a;
-  --color-risk-critical-bg: #fbe6e5;
-  --color-risk-high: #b3261e;
-  --color-risk-high-bg: #fbeaea;
-  --color-risk-medium: #a9711b;
-  --color-risk-medium-bg: #fbf0d9;
-  --color-risk-low: #1e7a4c;
-  --color-risk-low-bg: #e7f5ec;
+  /* Risk — semantic, brand-harmonized */
+  --color-risk-critical: #7d221b;
+  --color-risk-critical-bg: #f7e4e2;
+  --color-risk-high: #a5322a;
+  --color-risk-high-bg: #f8e7e5;
+  --color-risk-medium: #8f6417;
+  --color-risk-medium-bg: #f6ecd7;
+  --color-risk-low: #2e6b49;
+  --color-risk-low-bg: #e7f1ea;
 
-  --shadow-card: 0 1px 2px rgba(35, 38, 31, 0.04), 0 1px 8px rgba(35, 38, 31, 0.05);
-  --shadow-card-hover: 0 2px 4px rgba(35, 38, 31, 0.06), 0 8px 24px rgba(35, 38, 31, 0.08);
+  --shadow-card: 0 1px 2px rgba(8, 30, 13, 0.04), 0 1px 8px rgba(8, 30, 13, 0.05);
+  --shadow-card-hover: 0 2px 4px rgba(8, 30, 13, 0.06), 0 8px 24px rgba(8, 30, 13, 0.08);
+
+  /* Spacing rhythm (from the approved Figma capture) */
+  --space-gutter: 24px;
+  --space-grid-gap: 16px;
+  --radius-card: 0.75rem;
+  --radius-control: 0.5rem;
+  --sidebar-w: 256px;
+  --content-max: 1200px;
 }
 
 @theme inline {
   --font-arabic: var(--font-arabic);
+
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-green: var(--brand-green);
+  --color-brand-neutral: var(--brand-neutral);
 
   --color-bg: var(--color-bg);
   --color-surface: var(--color-surface);
@@ -112,7 +139,6 @@ body {
   background: var(--color-primary-tint-strong);
 }
 
-/* Thin, unobtrusive scrollbars for a polished feel */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -128,10 +154,19 @@ body {
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 1rem;
+  border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
 }
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
 }

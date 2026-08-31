@@ -1,13 +1,13 @@
-import type { AlertItem, AlertType } from "@/lib/types";
+import type { AlertItem } from "@/lib/types";
 import { RiskBadge } from "@/components/ui/Badge";
+import { NavIcon } from "@/components/layout/NavIcon";
 
-const TYPE_ICON: Record<AlertType, string> = {
-  critical_gap: "🚨",
-  missing_evidence: "📎",
-  evidence_expiring: "⏳",
-  requirement_deterioration: "📉",
-  action_overdue: "⏰",
-  high_risk_decision: "🧭",
+const RISK_FG: Record<AlertItem["severity"], string> = {
+  critical: "var(--color-risk-critical)",
+  high: "var(--color-risk-high)",
+  medium: "var(--color-risk-medium)",
+  low: "var(--color-risk-low)",
+  none: "var(--color-ink-faint)",
 };
 
 export function AlertCard({
@@ -27,8 +27,8 @@ export function AlertCard({
           : "border-[var(--color-border-strong)] bg-[var(--color-bg)]"
       }`}
     >
-      <span className="text-lg shrink-0" aria-hidden>
-        {TYPE_ICON[alert.type]}
+      <span className="mt-0.5 shrink-0" style={{ color: RISK_FG[alert.severity] }} aria-hidden>
+        <NavIcon name="warning" />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap mb-1">

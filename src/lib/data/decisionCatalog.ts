@@ -10,7 +10,6 @@ import type { DecisionCategory } from "@/lib/types";
 export interface DecisionCategoryMeta {
   id: DecisionCategory;
   labelAr: string;
-  icon: string; // emoji-style glyph, rendered inside a badge — no external icon deps
   helperAr: string;
 }
 
@@ -18,31 +17,26 @@ export const DECISION_CATEGORIES: DecisionCategoryMeta[] = [
   {
     id: "staffing_change",
     labelAr: "تغييرات في القوى العاملة",
-    icon: "👥",
     helperAr: "تخفيض أو زيادة عدد الموظفين في نقطة خدمة أو نشاط معين.",
   },
   {
     id: "service_change",
     labelAr: "تغيير في الخدمة أو نقاط التقديم",
-    icon: "🛎️",
     helperAr: "تعديل موقع أو آلية تقديم خدمة قائمة.",
   },
   {
     id: "guest_experience_process",
     labelAr: "عمليات تجربة الضيف",
-    icon: "🕋",
     helperAr: "إضافة أو تعديل مبادرات ومسارات تجربة ضيف الرحمن.",
   },
   {
     id: "evidence_process_change",
     labelAr: "تغيير في عمليات التوثيق والأدلة",
-    icon: "🗂️",
     helperAr: "تعديل آلية جمع أو توثيق الأدلة والتقارير الداعمة.",
   },
   {
     id: "operational_change",
     labelAr: "تغيير تشغيلي عام",
-    icon: "⚙️",
     helperAr: "تعديلات تشغيلية أوسع تمس أكثر من جانب من جوانب الرحلة.",
   },
 ];

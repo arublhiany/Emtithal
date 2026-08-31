@@ -28,7 +28,7 @@ export function ScenarioCompareCard({ alt }: { alt: DecisionAlternative }) {
         <p className="text-sm font-semibold text-[var(--color-ink)]">{alt.labelAr}</p>
         {alt.isRecommended && (
           <span className="shrink-0 rounded-full bg-[var(--color-primary)] px-2.5 py-1 text-[10px] font-bold text-white whitespace-nowrap">
-            الخيار الموصى به ✓
+            الخيار الموصى به
           </span>
         )}
       </div>

@@ -1532,6 +1532,177 @@ leaked reasons); it will pass once the Gemini quota recovers.
 
 ---
 
+### Phase 10 — Auth + Landing + Government Portal + Regulatory Management — IMPLEMENTATION IN PROGRESS, AWAITING APPROVAL
+Not committed. `AGENTS.md` / `CLAUDE.md` untouched. `.env.local` untouched.
+**No new dependency** (`package.json` unchanged). Gemini not retried. Built on
+approved checkpoint `1df46d1`.
+
+**Scope this phase (per the phase brief §0):** shared UI foundation / design
+tokens · responsive app shell · approved minimal landing · auth entry role ·
+government regulatory-management lifecycle (create / update / new version /
+activate / deactivate) · version history + audit presentation · deterministic
+applicability-scoped impact + regulatory-change notifications · finalist-ready
+exportable report. Full company screen-by-screen UI and a full mission-control
+redesign are **Phase 11** — the legacy `/company/*` and legacy `/ministry/*`
+pages keep their current layout and inherit only the new brand tokens + Cairo +
+the shared shell (icons, logo, mobile drawer).
+
+**Design tokens (`src/app/globals.css`).** The three authoritative product-owner
+colors are the palette root: `--brand-ink #081E0D`, `--brand-green #263F38`,
+`--brand-neutral #DDDAD5`, plus carefully-derived steps
+(`--brand-green-hover/-tint`, `--brand-neutral-strong`, `--brand-paper`). Every
+pre-existing `--color-*` token is re-pointed onto the brand palette so all
+existing pages inherit the correct brand with no breakage. Status / risk stay
+**semantic** but tuned to sit with the green (no vivid pure hues); contrast
+kept. Added spacing-rhythm tokens (`--space-gutter 24px`, `--space-grid-gap
+16px`, `--radius-card`, `--radius-control`, `--sidebar-w 256px`,
+`--content-max 1200px`) transcribed from the approved Figma capture, and a
+`@media print` block.
+
+**Cairo (`src/app/layout.tsx`).** `next/font/google` `Cairo` (ar + latin,
+weights 300–800) bound to `--font-arabic` — one family across the product.
+
+**Canonical logo.** The exact product-owner-supplied asset was copied verbatim
+to `public/emtithal-logo.png` (1882×836). `src/components/ui/Logo.tsx` renders
+it via `next/image`, aspect-ratio locked to the asset's intrinsic size — never
+redrawn / recreated with text / recolored / distorted. The old placeholder "ام"
+green box is removed from the landing and the sidebar.
+
+**Responsive app shell.** `AppShell` + `Sidebar` reworked: 256px static sidebar
+on desktop (`md+`), an off-canvas drawer + hamburger below `md`; `--content-max`
+centered main; logical properties (`border-e`, `-start`, `end-0`) for RTL. Nav
+icons are now a single inline-SVG **line-icon set** (`NavIcon.tsx`) — **no
+emoji**; the header bell is an SVG. `navConfig` icon fields became stable keys.
+Government nav: مركز التحكم · الشركات · المتطلبات والمعايير · التقارير · المخاطر ·
+المراجعات · التنبيهات.
+
+**Landing (`src/app/page.tsx`).** Rebuilt to the approved minimal structure —
+canonical `<Logo>` · language control (ع/EN toggle, no i18n backend) · headline ·
+short supporting text · **subtle AI-disclaimer pill** (approved) · «دخول الجهات
+الحكومية» · «دخول الشركات» · minimal footer. **Removed:** self-registration
+(«ليس لديك حساب؟ سجل الآن» — not approved), the role picker, the feature grid,
+value-props, and the "how it works" pipeline. Locked content lives in
+`src/lib/ui/landing.ts` and is source-scan-tested.
+
+**Auth entry.** No new auth system — the existing client `demoStore` session
+(`view` + `companyRole`) is preserved. Added the canonical single company role
+`"company_representative"` («ممثل الشركة», `COMPANY_REPRESENTATIVE_ROLE`) to the
+legacy `CompanyRole` union + label; the landing enters companies as that role
+with **no role picker**. Government entry sets the ministry session (no
+role/title picker). No external government SSO is implied.
+
+**Government regulatory-management domain (`src/lib/regmgmt/`, pure, tested).**
+A **management layer around** the canonical Phase-1 matrix — canonical
+requirements are **never mutated**. Files:
+- `types.ts` — `ReqLifecycleStatus` (`DRAFT|ACTIVE|SUPERSEDED|DEACTIVATED`),
+  `RequirementVersionRecord` (append-only), `ManagedRequirement`, `AuditEntry`
+  (8 actions), `RegChangeType` (6), `CompanyImpact` / `ImpactAnalysis` (with the
+  literal `makesNonCompliant:false` / `autoNonComplianceApplied:false`),
+  `RegChangeNotification`.
+- `lifecycle.ts` — pure state machine + `LIFECYCLE_TRANSITIONS` /
+  `canTransition`; `validateVersionInput`; `createNewRequirementDraft`,
+  `issueNewVersionDraft`, `updateDraft`, `activateVersion` (supersedes the prior
+  ACTIVE, sets its `effectiveUntil`, keeps it in history),
+  `deactivateRequirement` (sets `effectiveUntil`, never deletes). Controlled
+  `{ ok } | { ok:false, errorAr }` results — no throwing.
+- `audit.ts` — append-only entries; `auditForRequirement` (newest first).
+- `store.ts` — **separate** versioned localStorage store
+  (`emtithal-regmgmt-v1`, schema v1, own envelope + shape guard — same pattern as
+  the demo store, does NOT touch the demo store's shape/tests). `seedRegMgmtState`
+  layers an ACTIVE v1 baseline (origin `CANONICAL_BASELINE`) over every canonical
+  requirement, no audit. Pure reducers (`reduceCreateRequirement`,
+  `reduceIssueVersion`, `reduceUpdateDraft`, `reduceActivateVersion`,
+  `reduceDeactivate`, `reduceRecordNotifications`).
+- `impact.ts` — `analyzeImpact(version, changeType, portfolio, canonicalReq)`
+  runs the **approved deterministic `evaluateApplicability`** per company:
+  `NOT_APPLICABLE → NO_IMPACT`; `INSUFFICIENT_DATA →
+  APPLICABILITY_REEVALUATION_REQUIRED`; `APPLICABLE →` `NEW_EVIDENCE_REQUIRED`
+  (or `PENDING_VERIFICATION` for an upcoming date, or re-evaluation for a
+  deactivation). Never `NON_COMPLIANT`; scopes to affected companies only.
+- `notifications.ts` — `buildRegChangeNotifications` → one per affected company
+  (state ≠ NO_IMPACT), concise Arabic copy per type
+  ("تم إصدار اشتراط جديد ينطبق على منشأتك", …), `actionRequired` flag, and a
+  deep `targetHref` (`/company/compliance/<id>`). Unrelated companies get none.
+- `report.ts` — `buildComplianceReport` → structured
+  `ComplianceReport` (company, season, «مؤشر جاهزية امتثال», «نسبة التحقق»,
+  requirement rows, gaps, critical blockers, unresolved / pending,
+  official-source refs), `officialScoreIncluded:false`. `toReportCsv`
+  (UTF-8 BOM, quoted) and `toReportHtml` (print-friendly). `displayValue(null)`
+  → `"—"`, never `0`. **No dependency added.**
+
+**Government UI.** `RegMgmtProvider` (client context, wraps the pure reducers +
+the `emtithal-regmgmt-v1` key) in `src/app/ministry/layout.tsx`. Pages:
+`/ministry/requirements` (managed list + status chips), `/ministry/requirements/new`
+(draft editor — creates a `DRAFT`), `/ministry/requirements/[id]` (current-version
+detail, **version history**, **audit trail**, "issue new version" form,
+**activate**, **deactivate**, **impact analysis** table + **notification
+preview** built + recorded), `/ministry/reports` (readiness report from the
+canonical demo verification run — CSV download + print-friendly HTML/PDF).
+Demo government portfolio for impact = `src/lib/data/demo/governmentPortfolio.ts`
+(4 clearly-labelled `(تجريبي)` profiles derived from the one approved demo draft
+with declared-fact variations). Trust-boundary chips (`BoundaryChip`:
+REGULATION / VERIFICATION / AI / RESEARCH) added to the kit; the impact panel
+carries a `VERIFICATION` marker.
+
+**Product-truth in UI.** «مؤشر جاهزية امتثال» / «نسبة التحقق» used verbatim; no
+Official Score anywhere (report enforces `officialScoreIncluded:false`);
+canonical IDs (`HAJ-EXP-*`) are the primary identity, `CR-*` not surfaced;
+null readiness renders `—`. Internal enums are mapped to Arabic labels
+(`LIFECYCLE_LABEL_AR`, `IMPACT_STATE_LABEL_AR`, `AUDIT_ACTION_LABEL_AR`,
+`REG_CHANGE_TYPE_LABEL_AR`, `APPLICABILITY_AR`).
+
+**Roadmap boundaries respected** — no source crawler / live website watcher /
+government API / auto-promotion of detected changes / trained predictive ML
+model was implemented or claimed anywhere in code or copy.
+
+**Tests (new).** `src/lib/regmgmt/__tests__/{lifecycle,impact,report}.test.ts`
+(23) — seed baseline; transition table; create DRAFT (not active, not canonical
+truth); canonical model never mutated; issue+activate preserves the old version
+(SUPERSEDED, `effectiveUntil` set, `supersededByVersion`); activation needs an
+effective date; invalid transitions fail safely; deactivation keeps history;
+DRAFT_UPDATED / SOURCE_CHANGED / EFFECTIVE_DATE_CHANGED audit; versioned store
+round-trip + rejection; impact scoping (APPLICABLE / NOT_APPLICABLE /
+INSUFFICIENT_DATA); **no auto-NON_COMPLIANT** across all change types;
+notifications only to affected companies (the unrelated one gets none) with the
+right deep link + action flag; deterministic repeatability; report has no
+Official Score, `—` not `0`, echoes only supplied canonical values, UTF-8 BOM.
+`src/lib/ui/__tests__/landing.test.ts` (7) — exact government CTA; company entry
+role = `company_representative` / «ممثل الشركة» + no role picker; **no
+self-registration** affordance; AI-disclaimer pill present + concise; canonical
+`<Logo>` asset used (old "ام" box gone); no stale Figma / MVP mock content; no
+SSO implied.
+
+**Emoji-removal correction (pre-approval).** No Unicode/color emoji anywhere in
+active user-facing UI. Removed: KPI `icon="📊/⚠️/🔎/🧾/🎯/🚨/⏳/🗂️/🛠️/📋"` props
+(dashboard, control-center); the standalone `🚨` on the dashboard critical-gate
+banner → line-SVG warning; `AlertCard` per-type emoji map → one severity-tinted
+`NavIcon name="warning"`; `EvidenceCard` file-type emoji map → one
+`NavIcon name="document"` (file type kept as a text label/`title`);
+`DecisionForm` category `🧭/👥/🛎️/🕋/🗂️/⚙️` + submit-button `🧭` removed, and
+`icon` dropped from `decisionCatalog` data; `Card.EmptyState` default `icon="📋"`
+→ optional `ReactNode`; `KPICard` trend `▲/▼` → inline-SVG chevron; four UI
+`✓ …` confirmation prefixes stripped; `regmgmt/lifecycle.ts` comment diagram
+`▶/◀` → ASCII. `NavIcon` gained `warning` + `document`. Retained (monochrome
+typographic glyphs, not emoji, and matching the Figma): `←` / `→` as
+"more/forward/from→to" text, and `→` inside `src/lib/**` diagnostic strings.
+
+**Checks:** `typecheck` ✓ · `lint` ✓ · `npm test` **479 pass / 0 fail** (was
+449, +30) · `npm run build` ✓ (20 routes, incl. the 4 new government routes).
+Dev-server smoke: `/`, `/ministry/requirements`, `/ministry/requirements/new`,
+`/ministry/reports`, `/ministry/control-center`, `/company/dashboard` all HTTP
+200, no runtime-error markers. Not committed, not pushed. Phase 11 not started.
+
+**Known limitations (Phase 11).** The legacy `/company/*` and legacy
+`/ministry/*` (control-center, companies, standards, risks, reviews, alerts)
+screens are not yet rebuilt to the Figma direction — they render with the new
+tokens/font/shell but their internal layouts are the pre-Phase-10 MVP. A full
+mission-control redesign, the full responsive re-layout of every legacy screen,
+and the full company screen set are Phase 11. Visual QA at tablet/mobile widths
+was done statically (breakpoints, logical properties, drawer, `overflow-x-auto`
+tables, `max-w`); a live multi-viewport pass belongs with the Phase 11 UI build.
+
+---
+
 ## Phase 1 approval-gated items
 
 ### A — Arabic glossary — APPROVED (Phase 1)

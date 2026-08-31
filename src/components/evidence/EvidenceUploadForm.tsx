@@ -121,7 +121,7 @@ export function EvidenceUploadForm() {
 
       {done && (
         <p className="text-xs text-[var(--color-status-compliant)] font-medium">
-          ✓ تم رفع الدليل وإضافته بحالة «بانتظار المراجعة».
+          تم رفع الدليل وإضافته بحالة «بانتظار المراجعة».
         </p>
       )}
     </form>

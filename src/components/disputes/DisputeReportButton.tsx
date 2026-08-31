@@ -45,7 +45,7 @@ export function DisputeReportButton({
   if (submittedId) {
     return (
       <div className="rounded-lg border border-[var(--color-status-compliant)]/30 bg-[var(--color-status-compliant-bg)] px-4 py-3 text-sm text-[var(--color-status-compliant)]">
-        ✓ تم إنشاء تذكرة مراجعة رقم {submittedId}. سيتم إشعارك عند مراجعتها من فريق الامتثال — لن
+        تم إنشاء تذكرة مراجعة رقم {submittedId}. سيتم إشعارك عند مراجعتها من فريق الامتثال — لن
         يغيّر هذا الاعتراض النتيجة تلقائيًا.
       </div>
     );

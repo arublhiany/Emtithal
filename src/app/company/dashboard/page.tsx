@@ -58,7 +58,21 @@ export default function CompanyDashboardPage() {
 
       {hasUnresolvedCriticalGate && (
         <div className="rounded-xl border border-[var(--color-status-noncompliant)]/30 bg-[var(--color-status-noncompliant-bg)] px-5 py-4 flex items-start gap-3">
-          <span className="text-lg">🚨</span>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--color-status-noncompliant)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="mt-0.5 shrink-0"
+          >
+            <path d="M12 4 3 19h18z" />
+            <path d="M12 10v4M12 17h.01" />
+          </svg>
           <div>
             <p className="text-sm font-semibold text-[var(--color-status-noncompliant)]">
               عائق حرج قائم — متطلب حرج بحالة غير ملتزم
@@ -88,38 +102,26 @@ export default function CompanyDashboardPage() {
         <div className="lg:col-span-3 grid sm:grid-cols-3 gap-4">
           <KPICard
             label="فجوات التحقق"
-            value={verificationGaps.length}
-            icon="🎯"
-            toneClass="text-[var(--color-status-partial)]"
+            value={verificationGaps.length}toneClass="text-[var(--color-status-partial)]"
           />
           <KPICard
             label="المعوّقات الحرجة"
             value={criticalBlockerCount}
-            toneClass="text-[var(--color-status-noncompliant)]"
-            icon="🚨"
-          />
+            toneClass="text-[var(--color-status-noncompliant)]"/>
           <KPICard
             label="بانتظار تحقق تنظيمي"
-            value={regulatoryPendingCount}
-            icon="⏳"
-            toneClass="text-[var(--color-status-review)]"
+            value={regulatoryPendingCount}toneClass="text-[var(--color-status-review)]"
           />
           <KPICard
             label="الأدلة بحاجة متابعة"
-            value={pendingEvidence}
-            icon="🗂️"
-            toneClass="text-[var(--color-status-partial)]"
+            value={pendingEvidence}toneClass="text-[var(--color-status-partial)]"
           />
           <KPICard
             label="الإجراءات التصحيحية الجارية"
-            value={openActions}
-            icon="🛠️"
-          />
+            value={openActions}/>
           <KPICard
             label="عدد المعايير المقيّمة"
-            value={`${requirements.length}/5`}
-            icon="📋"
-          />
+            value={`${requirements.length}/5`}/>
         </div>
       </div>
 

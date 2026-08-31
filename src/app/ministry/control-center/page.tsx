@@ -38,20 +38,16 @@ export default function MinistryControlCenterPage() {
       />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard label="متوسط الامتثال" value={avgScore} suffix="/ 100" icon="📊" />
+        <KPICard label="متوسط الامتثال" value={avgScore} suffix="/ 100" />
         <KPICard
           label="شركات عالية الخطورة"
-          value={highRiskCompanies.length}
-          icon="⚠️"
-          toneClass="text-[var(--color-status-noncompliant)]"
+          value={highRiskCompanies.length}toneClass="text-[var(--color-status-noncompliant)]"
         />
         <KPICard
           label="شركات تحتاج متابعة"
-          value={attentionCompanies.length}
-          icon="🔎"
-          toneClass="text-[var(--color-status-partial)]"
+          value={attentionCompanies.length}toneClass="text-[var(--color-status-partial)]"
         />
-        <KPICard label="بانتظار التحقق" value={totalPendingVerification} icon="🧾" />
+        <KPICard label="بانتظار التحقق" value={totalPendingVerification} />
       </div>
 
       <Card>

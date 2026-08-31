@@ -1,6 +1,26 @@
 import type { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 
+function TrendMark({ direction }: { direction: "up" | "down" | "flat" }) {
+  if (direction === "flat") return <span aria-hidden>—</span>;
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={{ transform: direction === "down" ? "rotate(180deg)" : undefined }}
+    >
+      <path d="M6 3v6M3 6l3-3 3 3" />
+    </svg>
+  );
+}
+
 export function KPICard({
   label,
   value,
@@ -36,7 +56,7 @@ export function KPICard({
       </div>
       {trend && (
         <span
-          className={`text-xs font-medium ${
+          className={`inline-flex items-center gap-1 text-xs font-medium ${
             trend.direction === "up"
               ? "text-[var(--color-status-compliant)]"
               : trend.direction === "down"
@@ -44,7 +64,7 @@ export function KPICard({
                 : "text-[var(--color-ink-muted)]"
           }`}
         >
-          {trend.direction === "up" ? "▲" : trend.direction === "down" ? "▼" : "—"} {trend.label}
+          <TrendMark direction={trend.direction} /> {trend.label}
         </span>
       )}
       {hint && <span className="text-xs text-[var(--color-ink-faint)]">{hint}</span>}

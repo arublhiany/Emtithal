@@ -35,17 +35,17 @@ export function SectionHeader({
 }
 
 export function EmptyState({
-  icon = "📋",
+  icon,
   title,
   descriptionAr,
 }: {
-  icon?: string;
+  icon?: ReactNode;
   title: string;
   descriptionAr?: string;
 }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-12 px-6">
-      <div className="text-3xl mb-3">{icon}</div>
+      {icon && <div className="mb-3 text-[var(--color-ink-faint)]">{icon}</div>}
       <p className="font-medium text-[var(--color-ink)]">{title}</p>
       {descriptionAr && (
         <p className="text-sm text-[var(--color-ink-muted)] mt-1 max-w-sm">{descriptionAr}</p>

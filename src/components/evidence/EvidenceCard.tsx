@@ -2,14 +2,15 @@ import type { Evidence } from "@/lib/types";
 import { ConfidenceBadge, NeedsHumanReviewBadge } from "@/components/ui/Badge";
 import { EVIDENCE_VALIDATION_LABEL } from "@/lib/labels";
 import { DisputeReportButton } from "@/components/disputes/DisputeReportButton";
+import { NavIcon } from "@/components/layout/NavIcon";
 
-const FILE_ICON: Record<Evidence["fileType"], string> = {
-  pdf: "📄",
-  excel: "📊",
-  csv: "🧮",
-  word: "📝",
-  image: "🖼️",
-  other: "📁",
+const FILE_TYPE_LABEL: Record<Evidence["fileType"], string> = {
+  pdf: "PDF",
+  excel: "Excel",
+  csv: "CSV",
+  word: "Word",
+  image: "صورة",
+  other: "ملف",
 };
 
 const STATUS_LABEL: Record<Evidence["status"], string> = {
@@ -39,8 +40,12 @@ export function EvidenceCard({
     <div className="card p-5 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
-          <span className="text-xl shrink-0" aria-hidden>
-            {FILE_ICON[evidence.fileType]}
+          <span
+            className="mt-0.5 shrink-0 text-[var(--color-ink-muted)]"
+            title={FILE_TYPE_LABEL[evidence.fileType]}
+            aria-hidden
+          >
+            <NavIcon name="document" />
           </span>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-[var(--color-ink)] break-words">

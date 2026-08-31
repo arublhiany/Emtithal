@@ -78,9 +78,6 @@ export function DecisionForm({
                   : "border-[var(--color-border)] hover:bg-[var(--color-bg)]"
               }`}
             >
-              <span className="text-base ml-1.5" aria-hidden>
-                {c.icon}
-              </span>
               <span className="text-xs font-semibold text-[var(--color-ink)]">{c.labelAr}</span>
               <p className="text-[11px] text-[var(--color-ink-muted)] mt-1 leading-relaxed">
                 {c.helperAr}
@@ -199,7 +196,7 @@ export function DecisionForm({
         disabled={isSimulating}
         className="w-full rounded-xl bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white hover:bg-[var(--color-primary-hover)] transition-colors disabled:opacity-50"
       >
-        {isSimulating ? "جارٍ تحليل الأثر…" : "🧭 تحليل أثر القرار قبل التنفيذ"}
+        {isSimulating ? "جارٍ تحليل الأثر…" : "تحليل أثر القرار قبل التنفيذ"}
       </button>
     </form>
   );

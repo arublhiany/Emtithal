@@ -51,7 +51,7 @@ export default function StandardsPage() {
 
       {savedNote && (
         <div className="rounded-lg bg-[var(--color-status-compliant-bg)] text-[var(--color-status-compliant)] text-xs px-4 py-2.5">
-          ✓ {savedNote}
+          {savedNote}
         </div>
       )}
 

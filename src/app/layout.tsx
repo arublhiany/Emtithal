@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { IBM_Plex_Sans_Arabic } from "next/font/google";
+import { Cairo } from "next/font/google";
 import "./globals.css";
 import { DemoStoreProvider } from "@/lib/store/demoStore";
 
-const plexArabic = IBM_Plex_Sans_Arabic({
+// Cairo is the canonical Emtithal UI font (product-owner locked). One family,
+// used across the whole product.
+const cairo = Cairo({
   variable: "--font-arabic",
-  subsets: ["arabic"],
-  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["arabic", "latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -19,7 +21,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={`${plexArabic.variable} h-full`}>
+    <html lang="ar" dir="rtl" className={`${cairo.variable} h-full`}>
       <body className="min-h-full antialiased">
         <DemoStoreProvider>{children}</DemoStoreProvider>
       </body>

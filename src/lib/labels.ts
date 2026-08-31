@@ -127,6 +127,7 @@ export const TICKET_STATUS_LABEL: Record<SupportTicketStatus, string> = {
 export const DECISION_CATEGORY_LABEL_FALLBACK = "قرار تشغيلي";
 
 export const COMPANY_ROLE_LABEL: Record<string, string> = {
+  company_representative: "ممثل الشركة",
   compliance_officer: "مسؤول الامتثال",
   operations_manager: "مدير العمليات",
   decision_maker: "صانع القرار",
