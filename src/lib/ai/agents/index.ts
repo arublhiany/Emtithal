@@ -27,3 +27,14 @@ export type {
   RetrievalResult,
   RetrievalKind,
 } from "./regulatoryRetrieval";
+export { analyzeEvidence, mapEvidenceToRequirements } from "./evidenceAgent";
+export type {
+  EvidenceAgentInput,
+  EvidenceAgentOptions,
+  EvidenceAgentResult,
+  EvidenceAgentFailureCode,
+  EvidenceRetrievalOutcome,
+  EvidenceAnalysisState,
+  EvidenceRequirementMappingView,
+  EvidenceConflictView,
+} from "./evidenceAgent";

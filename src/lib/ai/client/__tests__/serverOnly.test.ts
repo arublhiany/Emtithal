@@ -40,10 +40,53 @@ const PROVIDER_SDKS: Record<string, string> = {
   "@google/genai": "src/lib/ai/client/geminiTransport.ts",
 };
 
+/** Server-only third-party parsers (Phase 6). Each confined to its one module. */
+const SERVER_ONLY_LIBS: Record<string, string> = {
+  unpdf: "src/lib/evidence/parsePdf.ts",
+  "read-excel-file": "src/lib/evidence/parseXlsx.ts",
+};
+
+/** Like `importsPkg` but also matches a subpath import (`pkg/node`). */
+const importsPkgOrSubpath = (t: string, pkg: string) => {
+  const p = pkg.replace(/[/\\^$.*+?()[\]{}|]/g, "\\$&");
+  return new RegExp(`from\\s+["']${p}(?:/[\\w./-]+)?["']|require\\(["']${p}(?:/[\\w./-]+)?["']\\)`).test(t);
+};
+
 test("each provider SDK is imported by exactly one source file — its transport", () => {
   for (const [pkg, expected] of Object.entries(PROVIDER_SDKS)) {
     const importers = FILES.filter((f) => importsPkg(f.text, pkg)).map((f) => f.path);
     assert.deepEqual(importers, [expected], `${pkg} importers`);
+  }
+});
+
+test("each server-only parser lib is imported by exactly one source file", () => {
+  for (const [pkg, expected] of Object.entries(SERVER_ONLY_LIBS)) {
+    const importers = FILES.filter((f) => importsPkgOrSubpath(f.text, pkg)).map((f) => f.path);
+    assert.deepEqual(importers, [expected], `${pkg} importers`);
+  }
+});
+
+test('no "use client" component imports a server-only parser lib or the evidence entrypoint', () => {
+  for (const f of FILES.filter(isClientComponent)) {
+    for (const pkg of Object.keys(SERVER_ONLY_LIBS)) {
+      assert.equal(importsPkgOrSubpath(f.text, pkg), false, `${f.path} imports ${pkg}`);
+    }
+    assert.equal(
+      /from\s+["']@\/lib\/evidence(["'/]|\/index)/.test(f.text),
+      false,
+      `${f.path} imports the server-only evidence layer`,
+    );
+  }
+});
+
+test("the evidence parsers + ingest carry a runtime browser guard", () => {
+  for (const rel of [
+    "src/lib/evidence/parsePdf.ts",
+    "src/lib/evidence/parseXlsx.ts",
+    "src/lib/evidence/ingestEvidence.ts",
+  ]) {
+    const f = FILES.find((x) => x.path === rel)!;
+    assert.match(f.text, /typeof window !== ["']undefined["']/);
   }
 });
 

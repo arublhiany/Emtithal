@@ -207,3 +207,90 @@ export function scanTextForForbiddenContent(text: string): GuardrailScanResult {
   }
   return violations.length === 0 ? { ok: true } : { ok: false, violations };
 }
+
+// -----------------------------------------------------------------------------
+// Compliance-verdict prose guard (Phase 6). Evidence interpretation may say the
+// evidence *appears* relevant / *appears to document* something, or that it is
+// *not enough alone* to judge compliance. It may NOT state an affirmative (or
+// negative) compliance / satisfaction / verification verdict in free text — the
+// deterministic verification engine owns that. Runs AFTER generation on the
+// user-facing prose fields.
+// -----------------------------------------------------------------------------
+
+/** Normalise for verdict matching: strip Arabic diacritics/tatweel, fold alef/ya/ta-marbuta, lowercase. */
+function normaliseVerdictText(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[ؐ-ًؚ-ٰٟۖ-ۭـ]/g, "")
+    .replace(/[أإآٱ]/g, "ا") // أ إ آ ٱ → ا
+    .replace(/ى/g, "ي") // ى → ي
+    .replace(/ة/g, "ه") // ة → ه
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Compliance-verdict phrases — BOTH affirmative and negative. Evidence
+ * interpretation must not state a compliance / satisfaction / verification
+ * outcome either way. Arabic patterns match `normaliseVerdictText` output;
+ * English patterns match raw + normalised. Phrases that merely mention
+ * "الامتثال" / "compliance" in an uncertainty context are NOT listed here.
+ */
+const COMPLIANCE_VERDICT_RX: RegExp[] = [
+  // --- Arabic — affirmative ---
+  /(يثبت|تثبت|يؤكد|تؤكد|اثبت|يبرهن)\s+(علي\s+)?(ال)?امتثال/,
+  /(يثبت|تثبت)\s+استيفاء/,
+  /(ال)?امتثال\s+(مؤكد|محقق|ثابت|مثبت|مستوف|قائم|منجز|تام)/,
+  /(تحقق|تم\s+تحقيق|جري\s+تحقيق)\s+(ال)?امتثال/,
+  /المتطلب\s+(متحقق|محقق|مستوف|مستوفي|مكتمل|مطابق|منجز|تام|مستوفى)/,
+  /(تم|جري)\s+استيفاء\s+المتطلب/,
+  /(يستوفي|تستوفي|يحقق|تحقق|يلبي|تلبي)\s+المتطلب/,
+  /(الشركه|المنشاه|الجهه|المتعهد)\s+(ملتزم|ملتزمه|ممتثل|ممتثله|مستوف|مستوفيه|مطابق|مطابقه|محقق|محققه)/,
+  /(ملتزم|ملتزمه|ممتثل|ممتثله)\s+(بالمتطلب|بالمتطلبات|بالاشتراط|بالمعيار)/,
+  /دليل\s+(علي\s+)?(ال)?امتثال/,
+  /الدليل\s+يثبت/,
+  // --- Arabic — negative ---
+  /عدم\s+(ال)?امتثال/, // عدم امتثال / عدم الامتثال / يوجد عدم امتثال / يثبت عدم الامتثال
+  /غير\s+(ملتزم|ملتزمه|ممتثل|ممتثله|متحقق|محقق|مستوف|مستوفي|مستوفاه|مطابق|منجز|مكتمل)/,
+  /لم\s+(تستوف|يستوف|يتحقق|تتحقق|يكتمل|تكتمل|ينجز|تنجز|يطابق|يمتثل|تمتثل)/,
+  /المتطلب\s+(لم\s+يتحقق|غير\s+متحقق|غير\s+مستوف)/,
+  // --- English — affirmative ---
+  /\b(is|are|now|fully|clearly)\s+compliant\b/i,
+  /\bthe\s+(company|entity|provider)\s+is\s+compliant\b/i,
+  /\b(proves?|prove|proven|demonstrates?|confirms?|establishes?)\s+(full\s+)?compliance\b/i,
+  /\bcompliance\s+(is|has\s+been)\s+(confirmed|proven|established|met|achieved|demonstrated)\b/i,
+  /\b(the\s+)?requirement\s+is\s+(satisfied|met|fulfilled|complete|compliant)\b/i,
+  /\b(meets|satisfies|fulfil?ls?)\s+the\s+requirement\b/i,
+  /\bverified\s+compliant\b/i,
+  /\bevidence\s+of\s+compliance\b/i,
+  // --- English — negative ---
+  /\bnon-?complian(t|ce)\b/i, // non-compliant / non-compliance / proves non-compliance / evidence of non-compliance
+  /\b(is|are)\s+not\s+compliant\b/i,
+  /\b(the\s+)?requirement\s+(is|was)\s+not\s+(met|satisfied|fulfilled|complete)\b/i,
+  /\b(the\s+)?requirement\s+has\s+not\s+been\s+(met|satisfied|fulfilled|complete[d]?)\b/i,
+  /\bfails?\s+to\s+(meet|satisfy|fulfil?l)\s+the\s+requirement\b/i,
+];
+
+export interface ComplianceVerdictScan {
+  ok: boolean;
+  /** Field paths where a verdict was found — never the offending text itself. */
+  fields: string[];
+}
+
+/**
+ * Scans named free-text fields for a compliance / satisfaction / verification
+ * verdict. Returns the offending FIELD PATHS only — callers must not surface the
+ * text.
+ */
+export function scanEvidenceProseForVerdict(
+  entries: { path: string; text: string }[],
+): ComplianceVerdictScan {
+  const fields: string[] = [];
+  for (const { path, text } of entries) {
+    if (!text) continue;
+    const norm = normaliseVerdictText(text);
+    if (COMPLIANCE_VERDICT_RX.some((rx) => rx.test(norm) || rx.test(text))) fields.push(path);
+  }
+  return fields.length === 0 ? { ok: true, fields: [] } : { ok: false, fields };
+}

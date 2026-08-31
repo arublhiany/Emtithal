@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 
 import type {
   DecisionObject,
+  EvidenceAgentAnalysis,
   EvidenceAgentOutput,
   RegulatoryAgentAnswer,
   RegulatoryAgentOutput,
@@ -18,6 +19,7 @@ import type {
 import {
   AI_OUTPUT_SCHEMAS,
   decisionObjectSchema,
+  evidenceAgentAnalysisSchema,
   evidenceAgentOutputSchema,
   regulatoryAgentAnswerSchema,
   regulatoryAgentOutputSchema,
@@ -27,6 +29,7 @@ import {
 } from "@/lib/ai/schemas";
 import type {
   DecisionObjectParsed,
+  EvidenceAgentAnalysisParsed,
   EvidenceAgentOutputParsed,
   RegulatoryAgentAnswerParsed,
   RegulatoryAgentOutputParsed,
@@ -40,13 +43,14 @@ import type {
 const _reg: RegulatoryAgentOutput = {} as RegulatoryAgentOutputParsed;
 const _rga: RegulatoryAgentAnswer = {} as RegulatoryAgentAnswerParsed;
 const _evi: EvidenceAgentOutput = {} as EvidenceAgentOutputParsed;
+const _eva: EvidenceAgentAnalysis = {} as EvidenceAgentAnalysisParsed;
 const _dec: DecisionObject = {} as DecisionObjectParsed;
 const _sce: Scenario = {} as ScenarioParsed;
 const _res: ResearchQueryResult = {} as ResearchQueryResultParsed;
 // ScenarioComparisonResult minus the guardrail-forbidden `affectedStatuses`.
 const _cmp: Omit<ScenarioComparisonResult, "affectedStatuses"> =
   {} as ScenarioComparisonResultParsed;
-void [_reg, _rga, _evi, _dec, _sce, _res, _cmp];
+void [_reg, _rga, _evi, _eva, _dec, _sce, _res, _cmp];
 
 // -- runtime validity + strictness ----------------------------------------
 
@@ -122,6 +126,46 @@ test("evidenceAgentOutputSchema: valid parses; strict", () => {
   };
   assert.equal(evidenceAgentOutputSchema.safeParse(valid).success, true);
   assert.equal(evidenceAgentOutputSchema.safeParse({ ...valid, extra: 1 }).success, false);
+});
+
+test("evidenceAgentAnalysisSchema (Phase 6): valid parses; no compliance field; strict", () => {
+  const valid = {
+    summaryAr: "ملخص",
+    mappings: [
+      {
+        requirementId: "HAJ-EXP-05",
+        evidenceFactIds: ["ev-1#p1"],
+        appearsToSupportAr: "يبدو داعمًا",
+        stillMissingAr: [],
+        relatedVerificationTargetAr: null as string | null,
+        interpretationConfidence: "MEDIUM" as const,
+      },
+    ],
+    conflicts: [],
+    unmappedFactIds: [],
+    needsHumanReview: false,
+  };
+  assert.equal(evidenceAgentAnalysisSchema.safeParse(valid).success, true);
+  // a lone-string explanatory list is tolerated
+  assert.equal(
+    evidenceAgentAnalysisSchema.safeParse({
+      ...valid,
+      mappings: [{ ...valid.mappings[0], stillMissingAr: "التقرير النهائي" }],
+    }).success,
+    true,
+  );
+  // forbidden compliance / weight fields are rejected (strict)
+  assert.equal(
+    evidenceAgentAnalysisSchema.safeParse({ ...valid, complianceStatus: "COMPLIANT" }).success,
+    false,
+  );
+  assert.equal(
+    evidenceAgentAnalysisSchema.safeParse({
+      ...valid,
+      mappings: [{ ...valid.mappings[0], officialWeight: 3 }],
+    }).success,
+    false,
+  );
 });
 
 test("decisionObjectSchema: valid parses (value/unit nullable); strict", () => {
@@ -208,6 +252,7 @@ test("researchQueryResultSchema: CORPUS_PENDING must have no studies", () => {
 test("the schema registry exposes every canonical agent output schema", () => {
   assert.deepEqual(Object.keys(AI_OUTPUT_SCHEMAS).sort(), [
     "decisionObject",
+    "evidenceAgentAnalysis",
     "evidenceAgentOutput",
     "regulatoryAgentAnswer",
     "regulatoryAgentOutput",

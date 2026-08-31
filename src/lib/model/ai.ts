@@ -93,6 +93,35 @@ export interface EvidenceAgentOutput {
   confidence: AIConfidence;
 }
 
+// --- Evidence Intelligence Agent — Phase 6 analysis (interpretation only) ----
+//
+// NON-AUTHORITATIVE. The model maps already-extracted facts to an approved
+// candidate requirement set. It never sets a compliance status / weight /
+// target / penalty, never invents a requirement, never marks anything verified.
+
+export interface EvidenceRequirementMapping {
+  requirementId: string;
+  evidenceFactIds: string[];
+  appearsToSupportAr: string;
+  stillMissingAr: string[];
+  relatedVerificationTargetAr: string | null;
+  interpretationConfidence: AIConfidence;
+}
+
+export interface EvidenceConflict {
+  factIdA: string;
+  factIdB: string;
+  descriptionAr: string;
+}
+
+export interface EvidenceAgentAnalysis {
+  summaryAr: string;
+  mappings: EvidenceRequirementMapping[];
+  conflicts: EvidenceConflict[];
+  unmappedFactIds: string[];
+  needsHumanReview: boolean;
+}
+
 // --- Decision Intelligence Agent (AI arch §8–§15) --------------------------
 export interface DecisionObject {
   decisionType: string;

@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 
 import {
   SHARED_GUARDRAIL_SYSTEM_PROMPT,
+  scanEvidenceProseForVerdict,
   scanForForbiddenContent,
   scanTextForForbiddenContent,
   withSharedGuardrails,
@@ -98,6 +99,80 @@ test("free-text scan flags forbidden field assertions", () => {
   assert.equal(scanTextForForbiddenContent('the "officialWeight": 20 for this').ok, false);
   assert.equal(scanTextForForbiddenContent("internalCriticality = CRITICAL here").ok, false);
   assert.equal(scanTextForForbiddenContent("This requirement needs more evidence.").ok, true);
+});
+
+test("evidence prose verdict scan: AFFIRMATIVE compliance/satisfaction verdicts are flagged", () => {
+  const bad = [
+    "هذا يثبت امتثال الشركة",
+    "الشركة ملتزمة بالمتطلب",
+    "المتطلب متحقق",
+    "الدليل يثبت استيفاء المتطلب",
+    "the company is compliant",
+    "this proves compliance",
+    "the requirement is satisfied",
+  ];
+  for (const t of bad) {
+    const r = scanEvidenceProseForVerdict([{ path: "appearsToSupportAr", text: t }]);
+    assert.equal(r.ok, false, t);
+    assert.deepEqual(r.fields, ["appearsToSupportAr"]);
+  }
+});
+
+test("evidence prose verdict scan: NEGATIVE non-compliance verdicts are flagged (Arabic)", () => {
+  const bad = [
+    "الشركة غير ملتزمة",
+    "الشركة غير ممتثلة",
+    "المتطلب غير متحقق",
+    "المتطلب غير مستوفى",
+    "لم تستوف الشركة المتطلب",
+    "لم يتحقق المتطلب",
+    "يوجد عدم امتثال",
+    "هذا يثبت عدم الامتثال",
+  ];
+  for (const t of bad) {
+    assert.equal(scanEvidenceProseForVerdict([{ path: "summaryAr", text: t }]).ok, false, t);
+  }
+});
+
+test("evidence prose verdict scan: NEGATIVE non-compliance verdicts are flagged (English)", () => {
+  const bad = [
+    "the company is not compliant",
+    "the company is non-compliant",
+    "the requirement is not met",
+    "the requirement is not satisfied",
+    "the requirement has not been fulfilled",
+    "this proves non-compliance",
+    "evidence of non-compliance",
+  ];
+  for (const t of bad) {
+    assert.equal(scanEvidenceProseForVerdict([{ path: "summaryAr", text: t }]).ok, false, t);
+  }
+});
+
+test("evidence prose verdict scan: hedged / uncertainty wording is allowed (positive AND negative)", () => {
+  const ok = [
+    "يبدو الدليل مرتبطًا بالمتطلب",
+    "يبدو أن المستند يوثق ثلاث فعاليات",
+    "قد يدعم التحقق من توثيق المبادرات",
+    "يحتاج إلى تحقق إضافي",
+    "الالتزام بالهوية أو المحددات المطلوبة",
+    "لا يكفي هذا الدليل وحده للحكم على الامتثال",
+    "يحتاج الأمر إلى تحقق إضافي قبل تحديد حالة الامتثال",
+    "لا يمكن تحديد حالة الامتثال من هذا المستند وحده",
+    "insufficient evidence to determine compliance",
+  ];
+  for (const t of ok) {
+    assert.equal(scanEvidenceProseForVerdict([{ path: "summaryAr", text: t }]).ok, true, t);
+  }
+});
+
+test("evidence prose verdict scan: reports only the field path, never the text", () => {
+  const r = scanEvidenceProseForVerdict([
+    { path: "summaryAr", text: "ملخص محايد" },
+    { path: "mappings[0].appearsToSupportAr", text: "هذا يثبت الامتثال" },
+  ]);
+  assert.equal(r.ok, false);
+  assert.deepEqual(r.fields, ["mappings[0].appearsToSupportAr"]);
 });
 
 test("withSharedGuardrails('json') wraps the agent prompt with the shared rules + a JSON-only instruction", () => {

@@ -703,6 +703,187 @@ before final sign-off but is low-risk.
 
 ---
 
+### Phase 6 — Evidence Intelligence Agent + PDF/XLSX ingestion — IMPLEMENTATION COMPLETE, AWAITING APPROVAL
+Not committed. `AGENTS.md` / `CLAUDE.md` untouched. No UI/Figma change. No
+regulatory fact / weight / target / penalty added. Evidence is NOT compliance —
+the deterministic verification engine stays authoritative.
+
+**Dependencies added (Phase 6 install gate — approved):** `unpdf@1.8.1` (PDF
+text extraction; bundles a serverless PDF.js build, no worker/native deps) and
+`read-excel-file@9.3.10` (XLSX; SAX XML reader, no macro/formula/URL
+evaluation). Both are the *primary* choices from the gate and both are
+compatible (ESM, Node ≥18/≥22, no native modules). No fallback installed. No LLM
+SDK added — the existing `AIClient` is reused. `+7` transitive packages, 0
+vulnerabilities.
+
+**Supported types:** PDF and .xlsx only. No Word / CSV / images / OCR.
+
+**Ingestion layer (`src/lib/evidence/`, server-only):**
+- `validate.ts` — deterministic pre-parse checks: supported extension / MIME,
+  `EMPTY_FILE`, `FILE_TOO_LARGE` (configurable; `DEFAULT_MAX_EVIDENCE_BYTES` =
+  10 MB), and a magic-byte signature check (`%PDF-` / `PK\x03\x04`). A mismatch
+  → controlled `PARSE_FAILED`.
+- `parsePdf.ts` — the ONLY importer of `unpdf`. `extractText(bytes,
+  { mergePages: false })` → one text segment per page; `page` is the parser's
+  1-based number. Browser guard.
+- `parseXlsx.ts` — the ONLY importer of `read-excel-file`. Reads every non-empty
+  cell with `sheet` + 1-based `row` + column letters + A1 `cellRef`; numbers
+  keep their type. Browser guard. Cell cap `MAX_XLSX_CELLS`.
+- `ingestEvidence.ts` — orchestrates validate → parse → `ExtractedEvidenceFact[]`.
+  Raw parser throws are caught and returned as `PARSE_FAILED` — never surfaced.
+  Output `state` is `UPLOADED` (any failure) or `EXTRACTED` (success), **never
+  `VERIFIED`** (the type does not even allow it). Failure codes:
+  `UNSUPPORTED_FILE_TYPE` / `EMPTY_FILE` / `FILE_TOO_LARGE` / `PARSE_FAILED`.
+
+**Evidence fact / provenance model (`types.ts`):** `ExtractedEvidenceFact` =
+`factId` (deterministic `${evidenceId}#p<page>` or `#<sheet>!<cellRef>`), `text`,
+`value`, `evidenceId`, `fileName`, `sourceLocator`
+(`PDF_PAGE{page}` | `XLSX_CELL{sheet,row,column,cellRef}`), `extractionMethod`
+(`PDF_TEXT` | `XLSX_CELL`). Provenance is produced by the parser, never the LLM,
+never fabricated.
+
+**Deterministic retrieval before AI:** the agent restricts the model to an
+APPROVED candidate requirement set — either an explicit `candidateRequirementIds`
+list (validated against the corpus) or Phase 5's `retrieveCandidates` run over
+the joined extracted text. No credible candidate → `NO_RELEVANT_REQUIREMENT`
+(`outOfScope: true`), **no LLM call, no requirement invented**.
+
+**Evidence Intelligence Agent (`src/lib/ai/agents/evidenceAgent.ts`):**
+`analyzeEvidence(input, opts?)` (alias `mapEvidenceToRequirements`). Uses the
+existing `AIClient` / provider abstraction, `evidenceAgentAnalysisSchema`
+(`.strict()`, registered as `evidenceAgentAnalysis`), shared guardrails
+(`approvedRequirementIds` = candidate set, `approvedAuthorityIds` = the 3
+authorities), safe logging, one-retry maximum. The LLM output carries
+`summaryAr`, `mappings[]` (`requirementId`, `evidenceFactIds`,
+`appearsToSupportAr`, `stillMissingAr`, `relatedVerificationTargetAr`,
+`interpretationConfidence`), `conflicts[]`, `unmappedFactIds`, `needsHumanReview`.
+It has NO compliance / weight / target / penalty / integration field — the
+shared guardrail rejects any such attempt AFTER JSON parsing, before Zod.
+
+**Assembly (deterministic on top):** every mapping's `requirementId` is
+re-checked against the candidate set and enriched with the canonical `titleAr`
+(verbatim) and `regulatoryResolution`; each mapping carries
+`note: "EVIDENCE_ONLY_NOT_A_COMPLIANCE_DECISION"`. The result exposes
+`complianceAsserted: false` (always). `needsHumanReview` is the OR of the model's
+flag and deterministic conditions: any conflict, ambiguous retrieval, a mapped
+`UNRESOLVED_REQUIREMENT`, a `LOW`-confidence mapping, zero mappings, or any
+reference/target integrity problem below.
+
+**Evidence-truth safeguards (correctness fixes):**
+
+1. **Prose compliance-verdict guard.** `scanEvidenceProseForVerdict` (in
+   `sharedGuardrails.ts`) deterministically scans every user-facing text field
+   (`summaryAr`, each mapping's `appearsToSupportAr` / `relatedVerificationTargetAr`
+   / `stillMissingAr[]`, each conflict's `descriptionAr`) for a compliance /
+   satisfaction / verification verdict — **BOTH affirmative and negative** —
+   Arabic (normalised) + English:
+   - affirmative — "يثبت الامتثال", "المتطلب متحقق", "الشركة ملتزمة",
+     "the company is compliant", "proves compliance", "requirement is satisfied";
+   - negative — "الشركة غير ملتزمة", "الشركة غير ممتثلة", "المتطلب غير متحقق",
+     "المتطلب غير مستوفى", "لم تستوف الشركة المتطلب", "لم يتحقق المتطلب",
+     "يوجد عدم امتثال", "هذا يثبت عدم الامتثال", "the company is not compliant",
+     "the company is non-compliant", "the requirement is not met/satisfied",
+     "the requirement has not been fulfilled", "this proves non-compliance",
+     "evidence of non-compliance".
+   Uncertainty wording that merely mentions compliance stays allowed —
+   "لا يكفي هذا الدليل وحده للحكم على الامتثال",
+   "يحتاج الأمر إلى تحقق إضافي قبل تحديد حالة الامتثال",
+   "لا يمكن تحديد حالة الامتثال من هذا المستند وحده",
+   "insufficient evidence to determine compliance" — a phrase is not rejected
+   merely for containing "امتثال" / "compliance". A hit → the whole
+   interpretation is returned as `GUARDRAIL_REJECTED`; the offending prose is
+   **never surfaced** (only the field path is recorded), `mappings` / `summaryAr`
+   are cleared, `state` stays `EXTRACTED`, extracted `facts` stay available,
+   `complianceAsserted` stays `false`, nothing is fabricated.
+
+2. **Closed-world evidence-fact references.** Every model-supplied fact reference
+   (`mapping.evidenceFactIds[]`, `conflicts[].factIdA/B`, `unmappedFactIds[]`) is
+   validated against the EXACT extracted `factId` set. A mapping with **any**
+   unknown reference is discarded **whole** (recorded in `droppedMappings` with
+   `UNKNOWN_EVIDENCE_FACT_REFERENCE`) — never silently reduced to the valid ids;
+   a mapping with zero fact ids is dropped (`NO_VALID_EVIDENCE_FACT`) so it can
+   never surface as supportive evidence. A conflict with an unknown id is not
+   accepted as a conflict. `unmappedFactIds` is recomputed deterministically
+   (real facts not backing a surviving mapping); model-invented entries are
+   ignored. Any such problem forces `needsHumanReview` and adds an
+   `integrityNotes` entry.
+
+3. **Closed-world verification target.** The prompt gives the model the allowed
+   target set for each candidate — its canonical `verificationAreasAr` plus its
+   single `verificationTarget` (existing canonical representation, no parallel
+   truth). `resolveVerificationTarget` accepts **only an EXACT equality of the
+   normalised forms** (`normalizeText` handles whitespace / punctuation / casing
+   / Arabic folding — nothing more): no substring, prefix, suffix, or fuzzy
+   matching. On a match the **canonical text is reattached verbatim**; on a
+   non-null miss (`"توثيق"`, `"المبادرات"`, `"توثيق المبادرات والسجل التجاري"`,
+   `"التحقق من السجل التجاري"` …) it is set to `null`, `needsHumanReview` is
+   forced, and an `integrityNotes` entry is added. A requirement with no usable
+   target → always `null`. An `UNRESOLVED_REQUIREMENT` stays unresolved
+   regardless of any target suggestion.
+
+**Evidence state:** `UPLOADED` → `EXTRACTED` → `AI_INTERPRETED`. Phase 6 never
+reaches `VERIFIED`; a successfully parsed or interpreted document is not
+compliance and not verified.
+
+**UNRESOLVED_REQUIREMENT:** a mapping to `HAJ-PROVIDERS-01` / `MOH-01` keeps
+`regulatoryResolution: "UNRESOLVED_REQUIREMENT"` from canonical data (the agent
+never flips it) and forces human review.
+
+**Conflicting evidence:** the model's `conflicts[]` are preserved verbatim, both
+fact IDs stay available in `facts[]`, `needsHumanReview` is forced true, and no
+fact is silently chosen. Newest upload is not treated as truth; interpretation
+confidence never resolves a factual conflict.
+
+**Failure model:** `AI_UNAVAILABLE` / `PROVIDER_ERROR` / `SCHEMA_VALIDATION_FAILED`
+(one retry) / `GUARDRAIL_REJECTED`, plus `EXTRACTION_UNAVAILABLE` when the
+extraction was not successful. On any failure `mappings` is `[]`, `summaryAr`
+is `null`, and the extracted `facts` are still echoed — no fabricated mapping.
+
+**Test fixtures (`src/lib/evidence/__tests__/fixtures.ts`):** synthetic only, no
+real documents — a hand-built 1-page Helvetica (Latin) PDF, a hand-built 1-page
+**Arabic** PDF, and a hand-built inline-string .xlsx (one 4-row sheet). The
+Arabic PDF uses an inline `/uniXXXX` `Encoding` so pdf.js derives the text from
+glyph names — **no embedded font program, no committed font file, no OCR**.
+Each fixture is self-checked against the real parsers at generation time and
+stored as base64. Plus malformed / empty variants.
+
+**Arabic PDF smoke test:** `parsePdf(SAMPLE_ARABIC_PDF_BYTES())` on the real
+`unpdf` path returns `pageCount 1`, `page 1`, Arabic script present, and the
+extracted character multiset equals the phrase
+"توثيق فعاليات ومبادرات فريق السعادة" (order-independent — the synthetic PDF has
+no font shaping / bidi, so words come out reversed, but every character is
+extracted, none fabricated). Provenance preserved. The parser is unchanged — no
+OCR.
+
+**Files (new):** `src/lib/evidence/{types,validate,parsePdf,parseXlsx,ingestEvidence,index}.ts`;
+`src/lib/evidence/__tests__/{fixtures.ts,parsePdf.test.ts,parseXlsx.test.ts,ingestEvidence.test.ts}`;
+`src/lib/ai/agents/evidenceAgent.ts`;
+`src/lib/ai/agents/__tests__/evidenceAgent.test.ts`;
+`src/lib/ai/scripts/liveEvidenceAgent.ts`.
+**Files (changed):** `src/lib/ai/guardrails/sharedGuardrails.ts`
+(+`scanEvidenceProseForVerdict`), `src/lib/ai/guardrails/__tests__/sharedGuardrails.test.ts`,
+`src/lib/ai/schemas/evidence.ts` (+Phase 6 analysis schema),
+`src/lib/ai/schemas/index.ts` (registry), `src/lib/ai/schemas/__tests__/schemas.test.ts`,
+`src/lib/ai/agents/index.ts` (exports), `src/lib/model/ai.ts` (+evidence analysis
+types), `src/lib/ai/client/__tests__/serverOnly.test.ts` (parser-lib containment
+scan), `package.json` / `package-lock.json` (the two parsers).
+
+**Checks:** `typecheck` ✓ · `lint` ✓ · `npm test` 295 pass / 0 fail (was 230,
++65) · `build` ✓. Not committed, not pushed. Phase 7 not started.
+
+**`LIVE_EVIDENCE_AGENT_TEST = PASSED`** (re-run after the negative-verdict +
+exact-target fixes) — provider `gemini`, model `gemini-3.6-flash`, ~13 s,
+synthetic Arabic extracted text only (no real file sent), candidates restricted
+to `HAJ-EXP-05`. Result: `state = AI_INTERPRETED`, mapped **only** to
+`HAJ-EXP-05`, canonical title "توثيق فعاليات ومبادرات فريق السعادة" unchanged;
+`appearsToSupportAr` = "يبدو أن الدليل يوثق تنفيذ ثلاث فعاليات لفريق السعادة…"
+— **no compliance verdict in any prose** (`complianceAsserted = false`); all
+`evidenceFactIds` are real supplied fact IDs; the verification target is
+canonical or `null`; no invented penalty / weight / requirement; structured
+output passed Zod + guardrails. No secret content.
+
+---
+
 ## Phase 1 approval-gated items
 
 ### A — Arabic glossary — APPROVED (Phase 1)
