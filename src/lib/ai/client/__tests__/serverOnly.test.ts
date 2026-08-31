@@ -81,16 +81,22 @@ test('no "use client" component imports a server-only parser lib or the evidence
       false,
       `${f.path} imports the server-only research layer`,
     );
+    assert.equal(
+      /from\s+["']@\/lib\/orchestrator(["'/]|\/orchestrator)/.test(f.text),
+      false,
+      `${f.path} imports the server-only orchestrator`,
+    );
   }
 });
 
-test("the evidence parsers + ingest + research ingest carry a runtime browser guard", () => {
+test("the evidence parsers + ingest + research ingest + orchestrator carry a runtime browser guard", () => {
   for (const rel of [
     "src/lib/evidence/parsePdf.ts",
     "src/lib/evidence/parseXlsx.ts",
     "src/lib/evidence/ingestEvidence.ts",
     "src/lib/research/ingestResearch.ts",
     "src/lib/research/verifyWebSnapshot.ts",
+    "src/lib/orchestrator/orchestrator.ts",
   ]) {
     const f = FILES.find((x) => x.path === rel)!;
     assert.match(f.text, /typeof window !== ["']undefined["']/);

@@ -1328,6 +1328,210 @@ secure local ingestion of the real official PDF over a valid TLS certificate.
 
 ---
 
+### Phase 9 — Emtithal AI Orchestrator — IMPLEMENTATION COMPLETE, AWAITING APPROVAL
+Not committed. `AGENTS.md` / `CLAUDE.md` untouched. No UI / Figma change. **No new
+dependency** — only `node:crypto` (`randomUUID`) is added; every capability is an
+existing approved Phase 2–8 engine / agent. Built on the approved Phase 8
+checkpoint `eeaf3a2`.
+
+**Purpose.** A server-only Orchestrator that *coordinates* the deterministic
+applicability + verification/readiness engines and the Regulatory / Evidence /
+Decision / Research intelligence agents. It is **not a new source of regulatory
+truth** and creates no authority beyond any child layer. It is not an autonomous
+agent loop: no recursive planning, no multi-agent conversation, no background
+actions, no browsing, no tools beyond the approved local capabilities.
+
+**Authority order (locked, enforced structurally).** 1) canonical regulatory
+model / Matrix → 2) deterministic applicability engine → 3) deterministic
+verification/readiness engine → 4) canonical company/evidence data → 5) AI
+interpretation layers → 6) research decision-support. AI never overrides
+deterministic truth; research never overrides regulation and is **always run
+last** (its result never feeds steps 1–5); evidence interpretation never marks
+evidence VERIFIED (`EvidenceAgentResult.state` is only `EXTRACTED` /
+`AI_INTERPRETED`).
+
+**Deterministic routing first (`src/lib/orchestrator/routing.ts`, NO LLM).**
+`classifyIntent(textAr, { evidenceAvailable })` scans normalised Arabic/English
+signal dictionaries + a canonical requirement-id regex. 0 categories fire →
+`UNSUPPORTED` (invokes nothing). 1 → that single intent. ≥2 → `COMBINED_ANALYSIS`
+with capabilities ordered `REGULATORY → EVIDENCE → DECISION → RESEARCH`. An
+attached evidence extraction alone makes EVIDENCE live. `extractRequirementId`
+lets an explicit id (e.g. `HAJ-EXP-05`) drive retrieval directly.
+`routingForForcedIntent(intent, withVerification?)` supports a caller-forced
+intent. Result is fully explainable: `matchedSignals`, `method`, `reasonAr`.
+
+**Request-scoped execution plan (correction, pre-checkpoint).** The plan runs
+the MINIMUM engines the actual request needs. A separate `VERIFICATION_SIGNALS`
+dictionary decides whether `DETERMINISTIC_VERIFICATION` (the company-wide
+`verifyAll(...)` snapshot) is in the plan **at all**. It is deliberately
+**context-specific**: the bare word `التحقق` / bare `verification` / `coverage` /
+`gaps` are NOT signals (ambiguous — "تحقق من هذا الملف" is an evidence request).
+A company-wide snapshot needs a readiness / company-status phrase:
+`مؤشر الجاهزية` / `مؤشر جاهزية` / `جاهزية الشركة` / `جاهزية امتثال` /
+`نسبة التحقق` / `تغطية التحقق` / `فجوات التحقق` / `العوائق الحرجة` /
+`وضع الشركة كامل` / `حالة الشركة` / `حالة الامتثال العامة` / `readiness` /
+`verification coverage` / `company verification` / `verification gaps` /
+`critical blocker` / `blockers`.
+- regulatory explanation / applicability only → `DETERMINISTIC_APPLICABILITY` +
+  `REGULATORY_INTELLIGENCE`, **no** company-wide verification snapshot
+- research only → `RESEARCH_INTELLIGENCE` only
+- evidence mapping only → `EVIDENCE_INTELLIGENCE` only (the evidence agent uses
+  its own deterministic candidate retrieval — it never forces a regulatory LLM
+  call), **no** verification snapshot; `"تحقق من هذا الملف"` / `"هل تم التحقق من
+  هذا الدليل؟"` with an attached extraction stay on the evidence path
+- decision / what-if → `DECISION_INTELLIGENCE`; the Phase 7 scenario engine runs
+  its own deterministic verification on cloned profiles internally — the
+  Orchestrator adds no separate company-wide snapshot
+- an **explicit** readiness / company-status ask → `["DETERMINISTIC_VERIFICATION"]`
+  **only**. `verifyAll(...)` already runs the canonical applicability logic
+  internally (`evaluateAllApplicability` inside the Phase 3 engine), so no
+  separate `DETERMINISTIC_APPLICABILITY` capability is emitted for a pure
+  readiness request — deterministic computation is not duplicated for capability
+  bookkeeping. When readiness is asked **alongside** a regulatory requirement,
+  `DETERMINISTIC_APPLICABILITY` is still emitted (that one requirement needs it).
+- unsupported → nothing
+`runOrchestration` computes the snapshot only when `DETERMINISTIC_VERIFICATION`
+is in the routed plan. It never produces a company-wide compliance verdict.
+
+**Orchestrator (`src/lib/orchestrator/orchestrator.ts`, server-only,
+browser-guarded).** `runOrchestration(request, opts?)`:
+- `request`: `{ textAr, profile?, verificationInputs?, evidenceExtraction?, forceIntent? }`
+  — `profile` / `verificationInputs` default to the canonical demo; **never mutated**.
+- `opts.client` injects one `AIClient` passed to **every** child agent (tests).
+- Runs only the routed capabilities, in the fixed sequence: deterministic
+  verification snapshot (**only when the plan includes it**) → regulatory
+  (deterministic applicability runs inside `explainApplicability` before the LLM)
+  → evidence (only when an extraction is attached; candidate set = the regulatory
+  requirement ids when present, else the evidence agent's own retrieval) →
+  decision (`simulateDecisionScenarios` — deterministic CURRENT always) →
+  research (`getResearchInsightsForDecision` when a scenario diff exists, else
+  `answerResearchQuestion`).
+- **Combines outputs without changing any canonical result.** The deterministic
+  verification view (when present) is a deep-copied read-only snapshot of
+  `verifyAll(...)`; `officialScoreComputed: false` is carried through.
+
+**Output contract (`src/lib/orchestrator/types.ts`).** `OrchestratorResult`:
+`requestId`, `intent`, `routing`, `capabilitiesUsed[]` (per-capability
+`CapabilityStatus` = `SUCCESS | NOT_REQUIRED | NO_RELEVANT_DATA | UNAVAILABLE |
+FAILED_SAFE`), `deterministicResults` (`applicability` | `verification` |
+`scenario`), `aiInsights[]` / `researchInsights[]` / `evidenceInsights[]`
+(flattened, provenance-tagged, **verbatim** from each child's already-guardrailed
+field — no re-synthesis), `decisionResults`, full child results
+(`regulatoryResult` / `evidenceResult` / `researchResult`), `warnings[]`,
+`needsHumanReview` + `needsHumanReviewReasons[]`, `provenance`, `failureCode`
+(`UNSUPPORTED_REQUEST` | `NO_CAPABILITY_PRODUCED_OUTPUT`), `meta` (`aiCallsMade`,
+`llmMetas`, `durationMs`). Irrelevant fields are explicit `null` / `[]`.
+
+**No LLM synthesis layer.** Per the phase rule, no synthesized-summary model call
+is added — the flattened insight lists are deterministic composition of child
+outputs, introducing no new fact, regulatory claim, or compliance verdict.
+
+**Failure isolation.** Each child agent already returns a controlled result and
+never throws; one failure never destroys the others. `AI_UNAVAILABLE` /
+`PROVIDER_ERROR` → `UNAVAILABLE` and the deterministic applicability +
+verification snapshot (and decision CURRENT) still return.
+`SCHEMA_VALIDATION_FAILED` / `GUARDRAIL_REJECTED` / ambiguous retrieval →
+`FAILED_SAFE`. Research `NO_RELEVANT_RESEARCH` / regulatory `OUT_OF_CORPUS` /
+evidence out-of-scope → `NO_RELEVANT_DATA` with **no LLM call and nothing
+fabricated**. A rejected decision recommendation keeps the deterministic
+scenarios + diffs.
+
+**Human review (deterministic aggregation, REQUEST-SCOPED).** `needsHumanReview =
+needsHumanReviewReasons.length > 0`; reasons are a deterministic, de-duplicated,
+sorted list — and **only** from results/capabilities actually surfaced for THIS
+orchestration:
+- company-wide reasons (`critical-blocker-present`, `pending-verification`,
+  `regulatory-pending-requirement`, `ambiguous-applicability`) are added **only**
+  when `DETERMINISTIC_VERIFICATION` is in the plan (i.e. the user explicitly
+  asked for readiness / verification). A narrow HAJ-EXP-05 + research query
+  therefore never inherits a blocker from CIV-03, an ambiguous applicability from
+  HAJ-NUSUK-01, or a regulatory-pending from HAJ-PROVIDERS-01 / MOH-01.
+- an `*-interpretation-review` reason (`regulatory-` / `evidence-` /
+  `decision-` / `research-interpretation-review`) is added **only** when that
+  capability produced a SUCCESSFUL, SURFACED AI interpretation **and** that
+  interpretation itself legitimately needs review (regulatory / decision-interpret
+  `ok && needsHumanReview`; evidence `ok && state === "AI_INTERPRETED" &&
+  needsHumanReview`; decision-recommendation `available && needsHumanReview`;
+  research a surfaced insight's own `interpretationConfidence === "LOW"`). If the
+  capability failed before surfacing an interpretation, only
+  `requested-{regulatory,evidence,research,decision}-capability-failed` is added —
+  never a phantom interpretation-review. `decision-recommendation-guardrail-rejected`
+  is kept for a rejected recommendation because the deterministic scenario output
+  still exists.
+- other requirement-scoped reasons (`unresolved-requirement`,
+  `insufficient-applicability-data`, `ambiguous-regulatory-retrieval`) are
+  deterministic / retrieval conditions about the specific requirement asked
+  about, independent of the LLM call outcome.
+- `provisional-research-source` is added **only** when an ACTUALLY SURFACED
+  research insight has `publicationStatus === "INTERIM_REPORT"` OR
+  `sourceKind === "OFFICIAL_STUDY_PAGE"`. `research-interpretation-review` is
+  added **only** when a surfaced insight's own `interpretationConfidence` is
+  `LOW`. Neither is ever added merely because Research Intelligence ran, and
+  neither depends on the child's aggregate `needsHumanReview` flag. SOURCE A
+  (`OFFICIAL_WEB_PAGE` / `OTHER_APPROVED`) with a grounded MEDIUM/HIGH insight
+  produces **no** research review reason; SOURCE B (`OFFICIAL_STUDY_PAGE`)
+  always produces `provisional-research-source`.
+- `requested-{regulatory,evidence,research}-capability-failed` is added only when
+  a capability the user explicitly requested returned a controlled failure.
+It is never a model decision.
+
+**Provenance (`OrchestratorProvenance`).** Reattached from child results, never
+via an LLM: regulatory = canonical `SourceLineage[]`; evidence = deterministic
+extraction locators (`PDF_PAGE` page / `XLSX_CELL` sheet!cell); decision =
+scenario ids + deduped `RequirementLineage[]` from `ScenarioDiff.sourceLineage`;
+research = canonical `researchId`s + `sourceKind`s + `publicationStatus`es +
+`snapshotHash`es + `WEB_SECTION` locators (no page); `ai` = safe `AICallMeta[]`
+only (no prompts, no raw content).
+
+**Immutability.** The Orchestrator writes nothing back to the company profile,
+verification inputs, regulatory matrix, research/regulatory corpora, evidence
+verification status, applicability, readiness, blockers, data-source states, or a
+scenario baseline. Tests JSON-snapshot every canonical input (and a
+caller-supplied profile) before/after and assert byte-equality.
+
+**Files (new):** `src/lib/orchestrator/{types,routing,orchestrator,index}.ts`;
+`src/lib/orchestrator/__tests__/{routing,orchestrator}.test.ts` +
+`__tests__/helpers.ts`; `src/lib/ai/scripts/liveOrchestrator.ts`.
+**Files (changed):** `src/lib/ai/client/__tests__/serverOnly.test.ts`
+(orchestrator server-only containment + browser guard).
+
+**Checks:** `typecheck` ✓ · `lint` ✓ · `npm test` 449 pass / 0 fail (was 403,
++46 for Phase 9; the last +7 are the edge-case pass: interpretation-review
+gating A–D, tightened verification-signal routing, and pure-readiness minimal
+plan) · `build` ✓. Not committed, not pushed. Phase 10 not started.
+
+**`LIVE_ORCHESTRATOR_TEST` — first run (pre-correction, historical): PASSED.**
+One orchestration of the safe combined request against the canonical demo
+company (`provider=gemini`, `model=gemini-3.6-flash`): `intent=COMBINED_ANALYSIS`,
+regulatory → `HAJ-EXP-05` with exact title `"توثيق فعاليات ومبادرات فريق السعادة"`,
+`applicability=APPLICABLE`, research → `UQU-HAJJ-INSTITUTE-SIMULATION-UNIT`
+(`OFFICIAL_WEB_PAGE` / `OTHER_APPROVED` / `WEB_SECTION`, canonical `snapshotHash`,
+`containsRegulatoryClaim=false`, no invented number), Zod + guardrails passed.
+That run also exposed the request-scoping defect (it computed a full
+company-wide verification snapshot and leaked unrelated review reasons), now
+fixed above.
+
+**`LIVE_ORCHESTRATOR_TEST` — fresh run after the edge-case pass: still BLOCKED
+by a persistent Gemini `PROVIDER_ERROR` (not a Phase 9 regression).** One fresh
+attempt (per the standing rule — not retried repeatedly): both child generations
+returned `PROVIDER_ERROR` in ~200–650 ms; the tiny `liveConnectivity` probe still
+`PASSED` and the **unchanged Phase 5** `explainRequirement("HAJ-EXP-05")` failed
+identically → Gemini-side quota / outage. The deterministic portion confirmed
+every corrected behaviour:
+`intent=COMBINED_ANALYSIS`; **`ranDeterministicVerification=false`**;
+caps `DETERMINISTIC_APPLICABILITY:SUCCESS`, `REGULATORY_INTELLIGENCE:UNAVAILABLE`,
+`RESEARCH_INTELLIGENCE:UNAVAILABLE`; `regReq=HAJ-EXP-05`,
+`regTitle="توثيق فعاليات ومبادرات فريق السعادة"`, `regState=SPECIFIED`,
+`applicability=APPLICABLE`. And the interpretation-review gating fix is visible:
+`needsHumanReviewReasons` = **`[requested-regulatory-capability-failed,
+requested-research-capability-failed]`** — the phantom
+`regulatory-interpretation-review` from the previous run is **gone**, and there is
+no company-wide leakage. `liveOrchestrator.ts` is ready (its `ok` gate asserts
+`ranDeterministicVerification === false`, exact title, SOURCE A id/kind/hash, no
+leaked reasons); it will pass once the Gemini quota recovers.
+
+---
+
 ## Phase 1 approval-gated items
 
 ### A — Arabic glossary — APPROVED (Phase 1)
