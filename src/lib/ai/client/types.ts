@@ -78,12 +78,24 @@ export interface AIClient {
   generateText(options: GenerateTextOptions): Promise<AICallResult<string>>;
 }
 
+/** Whether the caller expects a structured JSON object or free text back. */
+export type AIResponseFormat = "json" | "text";
+
 /**
- * The single seam the Anthropic SDK sits behind. Implemented once
- * (`anthropicTransport.ts`); faked in tests.
+ * The single seam a provider SDK sits behind. Implemented once per provider
+ * (`anthropicTransport.ts`, `geminiTransport.ts`); faked in tests.
+ *
+ * `responseFormat` lets a provider that has a native structured-output mode
+ * (Gemini: `responseMimeType: "application/json"`) request it for
+ * `generateStructured` only. Providers without one ignore the flag.
  */
 export interface AITransport {
   readonly provider: string;
   readonly model: string;
-  complete(input: { system: string; user: string; maxTokens: number }): Promise<{ text: string }>;
+  complete(input: {
+    system: string;
+    user: string;
+    maxTokens: number;
+    responseFormat: AIResponseFormat;
+  }): Promise<{ text: string }>;
 }

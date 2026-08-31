@@ -56,6 +56,11 @@ function readConfidence(data: unknown): AICallMeta["confidence"] {
 export class StructuredAIClient implements AIClient {
   constructor(private readonly transport: AITransport) {}
 
+  /** Which provider backs this client — for diagnostics / tests. */
+  get providerName(): string {
+    return this.transport.provider;
+  }
+
   private baseMeta(purpose: string): AICallMeta {
     return {
       requestId: randomUUID(),
@@ -76,7 +81,7 @@ export class StructuredAIClient implements AIClient {
   ): Promise<AICallResult<TData>> {
     const meta = this.baseMeta(opts.purpose);
     const started = Date.now();
-    const system = withSharedGuardrails(opts.system);
+    const system = withSharedGuardrails(opts.system, "json");
     const maxTokens = opts.maxTokens ?? DEFAULT_MAX_TOKENS;
 
     let user = opts.input;
@@ -86,7 +91,12 @@ export class StructuredAIClient implements AIClient {
 
       let text: string;
       try {
-        ({ text } = await this.transport.complete({ system, user, maxTokens }));
+        ({ text } = await this.transport.complete({
+          system,
+          user,
+          maxTokens,
+          responseFormat: "json",
+        }));
       } catch (err) {
         return this.finish(meta, started, {
           ok: false,
@@ -142,7 +152,7 @@ export class StructuredAIClient implements AIClient {
   async generateText(opts: GenerateTextOptions): Promise<AICallResult<string>> {
     const meta = this.baseMeta(opts.purpose);
     const started = Date.now();
-    const system = withSharedGuardrails(opts.system);
+    const system = withSharedGuardrails(opts.system, "text");
 
     let text: string;
     try {
@@ -150,6 +160,7 @@ export class StructuredAIClient implements AIClient {
         system,
         user: opts.input,
         maxTokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
+        responseFormat: "text",
       }));
     } catch (err) {
       meta.attempts = 1;
@@ -196,6 +207,10 @@ export class StructuredAIClient implements AIClient {
 /** Returned by `getAIClient()` when credentials are not configured. Never throws, never fakes. */
 export class UnavailableAIClient implements AIClient {
   constructor(private readonly reason: string) {}
+
+  get providerName(): string {
+    return "none";
+  }
 
   private unavailable<TData>(purpose: string): AICallResult<TData> {
     const meta: AICallMeta = {

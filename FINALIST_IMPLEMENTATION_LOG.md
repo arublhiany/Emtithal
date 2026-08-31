@@ -442,11 +442,99 @@ New — `src/lib/ai/`:
   `guardrails/__tests__/sharedGuardrails.test.ts`, `schemas/__tests__/schemas.test.ts`.
 
 Not done (Phase 4 owns infra only): agent behaviour / prompts / orchestration
-(Phases 5–9). Nothing wires `getAIClient()` into the app yet, so the Anthropic
-SDK is in no client or server bundle.
+(Phases 5–9). Nothing wires `getAIClient()` into the app yet, so neither
+provider SDK is in any client or server bundle.
 
-Live AI connectivity test: **NOT_RUN_MISSING_CREDENTIALS** — `AI_PROVIDER_API_KEY`
-and `AI_MODEL` are not configured in this environment.
+Live AI connectivity test: **NOT_RUN_MISSING_CREDENTIALS** — `AI_PROVIDER`,
+`AI_PROVIDER_API_KEY`, and `AI_MODEL` are not configured in this environment.
+
+### Phase 4 (extension) — Google Gemini as a second provider — IMPLEMENTATION COMPLETE, AWAITING APPROVAL
+Not committed. `AGENTS.md` / `CLAUDE.md` untouched. No UI/Figma or regulatory-fact
+change. The two uncommitted Anthropic compatibility fixes are preserved
+(`anthropicTransport.ts` sends no `temperature`; `liveConnectivity.ts` no
+`maxTokens: 64`).
+
+Dependency installed (approved only): `@google/genai@2.19.0` (`^2.19.0`).
+Transitive: `ws`, `p-retry`, `protobufjs`, `google-auth-library` (+ sub-deps).
+No other runtime dependency.
+
+Provider model:
+- New env var **`AI_PROVIDER=anthropic | gemini`**. `AI_PROVIDER_API_KEY` and
+  `AI_MODEL` stay shared — no provider-specific secret names.
+- `readAIConfig` now validates all three: missing/unknown provider, or missing
+  key/model → `{ present: false }` → `getAIClient()` returns `UnavailableAIClient`
+  → every call yields a controlled `AI_UNAVAILABLE` (never a fake fallback).
+- `getAIClient()` selects `createGeminiTransport` or `createAnthropicTransport`;
+  both build a shared `StructuredAIClient` — the retry / guardrail / Zod /
+  logging / requestId / controlled-failure pipeline is identical per provider.
+
+New / changed:
+- `src/lib/ai/client/geminiTransport.ts` — the ONLY file importing
+  `@google/genai`; server-only browser guard; implements the same `AITransport`
+  seam (`complete({system,user,maxTokens,responseFormat}) → {text}`); no
+  sampling params. `responseFormat: "json"` → native `responseMimeType:
+  "application/json"` (see structured-output fix below).
+- `src/lib/ai/client/config.ts` — added `AIProvider`, `KNOWN_AI_PROVIDERS`,
+  `AI_PROVIDER` parsing, `unknownProvider` reporting.
+- `src/lib/ai/client/index.ts` — provider dispatch in `buildAIClient()`.
+- `src/lib/ai/client/aiClient.ts` — `providerName` getter on both client classes
+  (diagnostics/tests).
+- `.env.example` — now exactly `AI_PROVIDER=` / `AI_PROVIDER_API_KEY=` /
+  `AI_MODEL=`, all blank.
+- `src/lib/ai/scripts/liveConnectivity.ts` — provider-aware (`AI_PROVIDER`);
+  reports `provider=` in the result line; handles unknown provider.
+- Tests: `client/__tests__/gemini.test.ts` (new — provider selection, shared
+  pipeline for Gemini, guardrails identical); `client/__tests__/aiClient.test.ts`
+  + `client/__tests__/serverOnly.test.ts` extended for `AI_PROVIDER` and the
+  second SDK.
+
+Schemas & guardrails: **unchanged and reused** — one Zod schema system, one
+`sharedGuardrails` scanner, applied to both providers. Gemini may not set/invent
+`complianceStatus` / `officialWeight` / penalty / `internalCriticality` /
+regulatory target / integration state / out-of-corpus requirement — enforced by
+the same code-level scan.
+
+#### Gemini structured-output fix (after live connectivity test)
+
+Live connectivity test with `AI_PROVIDER=gemini` reached the provider
+successfully (key/connectivity confirmed) but the call ended in a controlled
+`SCHEMA_VALIDATION_FAILED` after 2 attempts / ~143s.
+
+**Cause (no secrets logged):** the transport made a plain `generateContent`
+call with no structured-output mode, so Gemini returned free-form / reasoning-
+wrapped prose instead of a bare JSON object. `extractJson` + the Zod
+`safeParse` failed on both the first attempt and the single retry → the
+pipeline's designed `SCHEMA_VALIDATION_FAILED`. The ~143s is two full
+model turns (Gemini's default thinking) with no JSON constraint. No fake
+result was ever produced.
+
+**Fix (smallest clean change — no pipeline duplication, no new dependency):**
+- New `AIResponseFormat = "json" | "text"` flag on the `AITransport.complete`
+  seam (`src/lib/ai/client/types.ts`). `StructuredAIClient.generateStructured`
+  passes `"json"`; `generateText` passes `"text"`.
+- `geminiTransport.ts` — new pure `buildGeminiGenerateParams(...)` that sets
+  `config.responseMimeType = "application/json"` **only** when
+  `responseFormat === "json"`. `generateText` calls stay plain text. No
+  `responseSchema` is sent — the existing Zod schema remains the single source
+  of truth after `JSON.parse`, so no Zod→schema-conversion dependency was added.
+- `anthropicTransport.ts` — ignores `responseFormat` (Messages API has no JSON-
+  mode switch); comment added. Anthropic behaviour is unchanged.
+- `sharedGuardrails.ts` — the JSON-only instruction moved out of the shared
+  system prompt; `withSharedGuardrails(prompt, format)` now appends a JSON-only
+  or plain-text instruction per call.
+
+**Tests added / updated:** `client/__tests__/geminiTransport.test.ts` (new) —
+`buildGeminiGenerateParams` sets JSON mode for `"json"` and not for `"text"`;
+a spy transport proves `generateStructured` → `"json"` (incl. on retry) and
+`generateText` → `"text"`; JSON mode still runs the Zod + guardrail pipeline
+(forbidden field still `GUARDRAIL_REJECTED` after parsing, malformed still
+retries at most once); static check that only `geminiTransport.ts` sets a JSON-
+mode param. `guardrails/__tests__/sharedGuardrails.test.ts` updated for the
+2-arg `withSharedGuardrails` signature (json + text cases).
+
+**Checks:** `typecheck` ✓ · `lint` ✓ · `npm test` 175 pass / 0 fail ·
+`build` ✓. Not committed. Model unchanged. Safe to rerun the harmless live
+connectivity test.
 
 ---
 

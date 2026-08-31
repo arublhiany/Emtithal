@@ -7,9 +7,13 @@
 // call is NEVER allowed to continue as if valid.
 // =============================================================================
 
-import type { GuardrailContext } from "@/lib/ai/client/types";
+import type { AIResponseFormat, GuardrailContext } from "@/lib/ai/client/types";
 
-/** Prepended to every AI system prompt. The code-level scan below is the real enforcement. */
+/**
+ * Prepended to every AI system prompt (structured or text). The code-level scan
+ * below is the real enforcement; this text is defence-in-depth. It carries NO
+ * output-format instruction — that is appended per call by `withSharedGuardrails`.
+ */
 export const SHARED_GUARDRAIL_SYSTEM_PROMPT = `
 You are a support layer for Emtithal. The deterministic Verification Engine — not you — decides compliance.
 
@@ -24,14 +28,25 @@ You MUST NOT output, assert, set, or modify any of the following:
 
 If you lack sufficient verified information, say so with INSUFFICIENT_DATA or
 UNRESOLVED_REQUIREMENT and a short explanation. Never fabricate a plausible answer.
-Respond with ONLY a single JSON object. No prose. No markdown fences.
 `.trim();
 
 const JSON_ONLY_INSTRUCTION =
-  "Return ONLY one JSON object matching the required schema. No prose, no code fences.";
+  "Return ONLY one JSON object matching the required schema. No prose, no markdown fences.";
 
-export function withSharedGuardrails(agentSystemPrompt: string): string {
-  return `${SHARED_GUARDRAIL_SYSTEM_PROMPT}\n\n${agentSystemPrompt.trim()}\n\n${JSON_ONLY_INSTRUCTION}`;
+const TEXT_ONLY_INSTRUCTION =
+  "Answer in plain text. Do not wrap your answer in JSON or markdown code fences.";
+
+/**
+ * Wraps an agent's system prompt with the shared guardrail rules plus the
+ * output-format instruction for this call. `"json"` for `generateStructured`,
+ * `"text"` for `generateText`.
+ */
+export function withSharedGuardrails(
+  agentSystemPrompt: string,
+  format: AIResponseFormat,
+): string {
+  const instruction = format === "json" ? JSON_ONLY_INSTRUCTION : TEXT_ONLY_INSTRUCTION;
+  return `${SHARED_GUARDRAIL_SYSTEM_PROMPT}\n\n${agentSystemPrompt.trim()}\n\n${instruction}`;
 }
 
 // -----------------------------------------------------------------------------

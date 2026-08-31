@@ -2,10 +2,12 @@
 // Phase 4 tests — server-only enforcement (static source scan).
 //
 // Proves:
-//  - @anthropic-ai/sdk is imported by exactly ONE source file (the transport).
-//  - no "use client" component imports the AI client entrypoint or the SDK.
+//  - @anthropic-ai/sdk and @google/genai are each imported by exactly ONE
+//    source file (their transports).
+//  - no "use client" component imports either provider SDK or the AI client
+//    entrypoint / a transport.
 //  - the AI env vars are never NEXT_PUBLIC_* and never referenced from client code.
-//  - .env.example keeps the key blank.
+//  - .env.example lists exactly AI_PROVIDER / AI_PROVIDER_API_KEY / AI_MODEL, all blank.
 // =============================================================================
 
 import { test } from "node:test";
@@ -28,31 +30,47 @@ function walk(dir: string): string[] {
 
 const FILES = walk(SRC).map((f) => ({ path: path.relative(ROOT, f), text: readFileSync(f, "utf8") }));
 const isClientComponent = (f: { text: string }) => /^\s*["']use client["'];/m.test(f.text);
-const importsAnthropicSdk = (t: string) => /from\s+["']@anthropic-ai\/sdk["']|require\(["']@anthropic-ai\/sdk["']\)/.test(t);
+const importsPkg = (t: string, pkg: string) => {
+  const p = pkg.replace(/[/\\^$.*+?()[\]{}|]/g, "\\$&");
+  return new RegExp(`from\\s+["']${p}["']|require\\(["']${p}["']\\)`).test(t);
+};
 
-test("@anthropic-ai/sdk is imported by exactly one source file — the transport", () => {
-  const importers = FILES.filter((f) => importsAnthropicSdk(f.text)).map((f) => f.path);
-  assert.deepEqual(importers, ["src/lib/ai/client/anthropicTransport.ts"]);
+const PROVIDER_SDKS: Record<string, string> = {
+  "@anthropic-ai/sdk": "src/lib/ai/client/anthropicTransport.ts",
+  "@google/genai": "src/lib/ai/client/geminiTransport.ts",
+};
+
+test("each provider SDK is imported by exactly one source file — its transport", () => {
+  for (const [pkg, expected] of Object.entries(PROVIDER_SDKS)) {
+    const importers = FILES.filter((f) => importsPkg(f.text, pkg)).map((f) => f.path);
+    assert.deepEqual(importers, [expected], `${pkg} importers`);
+  }
 });
 
-test('no "use client" component imports the SDK or the AI client entrypoint', () => {
+test('no "use client" component imports a provider SDK or the AI client entrypoint / a transport', () => {
   for (const f of FILES.filter(isClientComponent)) {
-    assert.equal(importsAnthropicSdk(f.text), false, `${f.path} imports @anthropic-ai/sdk`);
+    for (const pkg of Object.keys(PROVIDER_SDKS)) {
+      assert.equal(importsPkg(f.text, pkg), false, `${f.path} imports ${pkg}`);
+    }
     assert.equal(
       /from\s+["']@\/lib\/ai\/client(["'/]|\/index)/.test(f.text),
       false,
       `${f.path} imports the server-only AI client`,
     );
     assert.equal(
-      /from\s+["']@\/lib\/ai\/client\/anthropicTransport["']/.test(f.text),
+      /from\s+["']@\/lib\/ai\/client\/(anthropic|gemini)Transport["']/.test(f.text),
       false,
-      `${f.path} imports the Anthropic transport`,
+      `${f.path} imports a provider transport`,
     );
   }
 });
 
-test("the transport and client entrypoint carry a runtime browser guard", () => {
-  for (const rel of ["src/lib/ai/client/anthropicTransport.ts", "src/lib/ai/client/index.ts"]) {
+test("the transports and client entrypoint carry a runtime browser guard", () => {
+  for (const rel of [
+    "src/lib/ai/client/anthropicTransport.ts",
+    "src/lib/ai/client/geminiTransport.ts",
+    "src/lib/ai/client/index.ts",
+  ]) {
     const f = FILES.find((x) => x.path === rel)!;
     assert.match(f.text, /typeof window !== ["']undefined["']/);
   }
@@ -61,30 +79,37 @@ test("the transport and client entrypoint carry a runtime browser guard", () => 
 test("AI env vars are server-side only: no NEXT_PUBLIC_*, never in client components", () => {
   for (const f of FILES) {
     assert.equal(
-      /NEXT_PUBLIC_[A-Z_]*(AI_PROVIDER_API_KEY|AI_MODEL|AI_PROVIDER|ANTHROPIC)/.test(f.text),
+      /NEXT_PUBLIC_[A-Z_]*(AI_PROVIDER_API_KEY|AI_MODEL|AI_PROVIDER|ANTHROPIC|GEMINI|GOOGLE)/.test(f.text),
       false,
       `${f.path} exposes an AI var via NEXT_PUBLIC_*`,
     );
     if (isClientComponent(f)) {
       assert.equal(
-        /AI_PROVIDER_API_KEY|AI_MODEL/.test(f.text),
+        /AI_PROVIDER(_API_KEY)?|AI_MODEL/.test(f.text),
         false,
         `${f.path} (client) references an AI env var`,
       );
     }
   }
   // Only server-side modules mention the vars at all.
-  const mentioners = FILES.filter((f) => /process\.env\.(AI_PROVIDER_API_KEY|AI_MODEL)/.test(f.text)).map(
-    (f) => f.path,
-  );
+  const mentioners = FILES.filter((f) =>
+    /process\.env\.(AI_PROVIDER|AI_PROVIDER_API_KEY|AI_MODEL)/.test(f.text),
+  ).map((f) => f.path);
   for (const m of mentioners) {
     assert.ok(m.startsWith("src/lib/ai/"), `${m} reads an AI env var but is not under src/lib/ai/`);
   }
 });
 
-test(".env.example keeps the API key blank and uses no NEXT_PUBLIC_ prefix", () => {
+test(".env.example lists exactly the three AI vars, all blank, no NEXT_PUBLIC_ / no real key", () => {
   const env = readFileSync(path.join(ROOT, ".env.example"), "utf8");
+  assert.match(env, /^AI_PROVIDER=\s*$/m);
   assert.match(env, /^AI_PROVIDER_API_KEY=\s*$/m);
   assert.match(env, /^AI_MODEL=\s*$/m);
   assert.equal(/NEXT_PUBLIC_/.test(env), false);
+  // no assignment carries a value (only blank `KEY=` lines)
+  const assignments = env.split("\n").filter((l) => /^[A-Z_]+=/.test(l));
+  assert.deepEqual(
+    assignments.sort(),
+    ["AI_MODEL=", "AI_PROVIDER=", "AI_PROVIDER_API_KEY="],
+  );
 });

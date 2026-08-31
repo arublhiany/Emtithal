@@ -39,7 +39,7 @@ const call = <T>(client: StructuredAIClient, schema: z.ZodType<T>) =>
 // -- config → AI_UNAVAILABLE --------------------------------------------------
 
 test("missing API key → readAIConfig reports it; UnavailableAIClient → AI_UNAVAILABLE", async () => {
-  const cfg = readAIConfig({ AI_MODEL: "m" });
+  const cfg = readAIConfig({ AI_PROVIDER: "anthropic", AI_MODEL: "m" });
   assert.equal(cfg.present, false);
   assert.deepEqual((cfg as { missing: string[] }).missing, ["AI_PROVIDER_API_KEY"]);
 
@@ -55,14 +55,37 @@ test("missing API key → readAIConfig reports it; UnavailableAIClient → AI_UN
 });
 
 test("missing AI_MODEL → readAIConfig reports it", () => {
-  const cfg = readAIConfig({ AI_PROVIDER_API_KEY: "k" });
+  const cfg = readAIConfig({ AI_PROVIDER: "gemini", AI_PROVIDER_API_KEY: "k" });
   assert.equal(cfg.present, false);
   assert.deepEqual((cfg as { missing: string[] }).missing, ["AI_MODEL"]);
 });
 
-test("both present → readAIConfig is present with values", () => {
-  const cfg = readAIConfig({ AI_PROVIDER_API_KEY: " k ", AI_MODEL: " m " });
-  assert.deepEqual(cfg, { present: true, apiKey: "k", model: "m" });
+test("missing AI_PROVIDER → readAIConfig reports it (→ AI_UNAVAILABLE)", () => {
+  const cfg = readAIConfig({ AI_PROVIDER_API_KEY: "k", AI_MODEL: "m" });
+  assert.equal(cfg.present, false);
+  assert.deepEqual((cfg as { missing: string[] }).missing, ["AI_PROVIDER"]);
+});
+
+test("unknown AI_PROVIDER → not present (→ AI_UNAVAILABLE), reports the bad value", () => {
+  const cfg = readAIConfig({ AI_PROVIDER: "openai", AI_PROVIDER_API_KEY: "k", AI_MODEL: "m" });
+  assert.equal(cfg.present, false);
+  assert.deepEqual((cfg as { missing: string[] }).missing, []);
+  assert.equal((cfg as { unknownProvider: string }).unknownProvider, "openai");
+});
+
+test("both providers: all present → readAIConfig is present with provider + values", () => {
+  assert.deepEqual(readAIConfig({ AI_PROVIDER: "anthropic", AI_PROVIDER_API_KEY: " k ", AI_MODEL: " m " }), {
+    present: true,
+    provider: "anthropic",
+    apiKey: "k",
+    model: "m",
+  });
+  assert.deepEqual(readAIConfig({ AI_PROVIDER: " gemini ", AI_PROVIDER_API_KEY: "k2", AI_MODEL: "m2" }), {
+    present: true,
+    provider: "gemini",
+    apiKey: "k2",
+    model: "m2",
+  });
 });
 
 // -- success / retry / schema ----------------------------------------------

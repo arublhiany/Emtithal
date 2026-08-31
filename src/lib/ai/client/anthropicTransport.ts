@@ -26,10 +26,17 @@ export function createAnthropicTransport(config: AnthropicTransportConfig): AITr
     provider: "anthropic",
     model: config.model,
     async complete({ system, user, maxTokens }) {
+      // `responseFormat` is intentionally ignored: the Anthropic Messages API has
+      // no native JSON-mode switch. Structured output is steered by the shared
+      // guardrail prompt and enforced by the client's Zod validation. Only the
+      // Gemini transport acts on `responseFormat` (native `responseMimeType`).
+      //
+      // NOTE: `temperature` / `top_p` / `top_k` are rejected (HTTP 400) by the
+      // current Claude models (Opus 5 / Sonnet 5 / 4.6+ family), so no sampling
+      // param is sent. Determinism is handled at the prompt/schema level.
       const response = await client.messages.create({
         model: config.model,
         max_tokens: maxTokens,
-        temperature: 0,
         system,
         messages: [{ role: "user", content: user }],
       });

@@ -100,9 +100,23 @@ test("free-text scan flags forbidden field assertions", () => {
   assert.equal(scanTextForForbiddenContent("This requirement needs more evidence.").ok, true);
 });
 
-test("withSharedGuardrails wraps the agent prompt with the shared rules + JSON instruction", () => {
-  const wrapped = withSharedGuardrails("Do the regulatory retrieval.");
+test("withSharedGuardrails('json') wraps the agent prompt with the shared rules + a JSON-only instruction", () => {
+  const wrapped = withSharedGuardrails("Do the regulatory retrieval.", "json");
   assert.ok(wrapped.includes(SHARED_GUARDRAIL_SYSTEM_PROMPT));
   assert.ok(wrapped.includes("Do the regulatory retrieval."));
   assert.ok(/ONLY one JSON object/i.test(wrapped));
+  assert.equal(/plain text/i.test(wrapped), false);
+});
+
+test("withSharedGuardrails('text') wraps the agent prompt with the shared rules + a plain-text instruction", () => {
+  const wrapped = withSharedGuardrails("Summarise the readiness gap.", "text");
+  assert.ok(wrapped.includes(SHARED_GUARDRAIL_SYSTEM_PROMPT));
+  assert.ok(wrapped.includes("Summarise the readiness gap."));
+  assert.ok(/plain text/i.test(wrapped));
+  assert.equal(/ONLY one JSON object/i.test(wrapped), false);
+});
+
+test("the shared guardrail system prompt itself carries no output-format instruction", () => {
+  assert.equal(/ONLY one JSON object/i.test(SHARED_GUARDRAIL_SYSTEM_PROMPT), false);
+  assert.equal(/plain text/i.test(SHARED_GUARDRAIL_SYSTEM_PROMPT), false);
 });
