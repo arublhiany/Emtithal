@@ -65,11 +65,16 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
                   : "border-dashed border-[var(--color-border)] bg-[var(--color-bg)]"
               }`}
             >
-              <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
-                <span className="text-sm font-medium text-[var(--color-ink)]">
-                  {displayRequirementId(r.requirementId)} — {r.requirementNameAr}
+              <div className="flex items-start justify-between flex-wrap gap-2 mb-2">
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-[var(--color-ink)]">
+                    {r.requirementNameAr}
+                  </span>
+                  <span className="block text-[11px] text-[var(--color-ink-faint)]">
+                    رمز المتطلب: {displayRequirementId(r.requirementId)}
+                  </span>
                 </span>
-                <span className="flex items-center gap-2 text-xs">
+                <span className="flex shrink-0 items-center gap-2 text-xs">
                   {r.includedInScore ? (
                     <>
                       <span className="tabular-nums text-[var(--color-ink-muted)]">

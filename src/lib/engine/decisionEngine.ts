@@ -41,7 +41,15 @@ import type {
 } from "@/lib/types";
 import { computeOverallScore } from "@/lib/engine/scoringEngine";
 import { interpretDecision, type DecisionAgentMapping } from "@/lib/agent/decisionAgent";
-import { displayRequirementId } from "@/lib/data/regulatory";
+
+/** "بمقدار …" points phrase in natural Arabic (1 → نقطة واحدة, 2 → نقطتين, 3–10 → N نقاط, else → N نقطة). */
+function pointsPhraseAr(n: number): string {
+  const a = Math.abs(n);
+  if (a === 1) return "نقطة واحدة";
+  if (a === 2) return "نقطتين";
+  if (a >= 3 && a <= 10) return `${a} نقاط`;
+  return `${a} نقطة`;
+}
 
 // NOTE: `computeOverallScore` here is the LEGACY weighted baseline used only for
 // the decision-simulation before/after projection. It is NOT the Phase 3
@@ -113,12 +121,12 @@ function buildRequirementImpacts(
           ? "negative"
           : "uncertain";
 
-    const reqLabel = displayRequirementId(requirement.id);
+    const reqName = `«${requirement.nameAr}»`;
     const explanationAr = mapping.includedInScore
-      ? `القرار المقترح على "${input.affectedAreaAr}" قد يؤدي إلى ${
+      ? `${
           direction === "positive" ? "تحسّن" : direction === "negative" ? "تراجع" : "تأثير محدود"
-        } في جاهزية متطلب ${reqLabel} بمقدار ${Math.abs(actualDelta)} نقطة.`
-      : `قد يتأثر متطلب ${reqLabel} بالقرار المقترح، لكن مستوى الثقة منخفض. الأثر غير محتسب في المؤشر — راجع البيانات المرتبطة قبل الاعتماد عليه.`;
+        } متوقع في جاهزية متطلب ${reqName} بمقدار ${pointsPhraseAr(actualDelta)}.`
+      : `قد يتأثر متطلب ${reqName} بالقرار المقترح، لكن مستوى الثقة منخفض. الأثر غير محتسب في المؤشر — راجع البيانات المرتبطة قبل الاعتماد عليه.`;
 
     impacts.push({
       requirementId: requirement.id,
@@ -335,7 +343,7 @@ export function simulateDecision(
     positives.length > 0
       ? positives.map(
           (i) =>
-            `تحسّن متوقع بمقدار ${i.delta} نقطة في متطلب ${i.requirementNameAr} (${displayRequirementId(i.requirementId)}).`
+            `تحسّن متوقع في جاهزية متطلب «${i.requirementNameAr}» بمقدار ${pointsPhraseAr(i.delta)}.`
         )
       : ["لا توجد آثار إيجابية مؤكدة متوقعة."];
 
@@ -343,7 +351,7 @@ export function simulateDecision(
     negatives.length > 0
       ? negatives.map(
           (i) =>
-            `تراجع متوقع بمقدار ${Math.abs(i.delta)} نقطة في متطلب ${i.requirementNameAr} (${displayRequirementId(i.requirementId)}) — مستوى الخطر ${riskLabelAr(i.riskLevel)}.`
+            `تراجع متوقع في جاهزية متطلب «${i.requirementNameAr}» بمقدار ${pointsPhraseAr(i.delta)} — مستوى الخطر ${riskLabelAr(i.riskLevel)}.`
         )
       : ["لا توجد آثار سلبية مؤكدة متوقعة."];
 
@@ -351,12 +359,12 @@ export function simulateDecision(
     .filter((i) => i.predictedScore < 60)
     .map(
       (i) =>
-        `قد تنخفض جاهزية متطلب ${i.requirementNameAr} (${displayRequirementId(i.requirementId)}) إلى نطاق «غير ملتزم» عند تنفيذ القرار كما هو مقترح.`
+        `قد تنخفض جاهزية متطلب «${i.requirementNameAr}» إلى نطاق «غير ملتزم» عند تنفيذ القرار كما هو مقترح.`
     );
 
   const preventiveActionsAr = negatives.map((i) => {
     const req = requirements.find((r) => r.id === i.requirementId)!;
-    return `قبل التنفيذ: ${req.recommendedActionAr} — لتقليل أثر القرار على متطلب ${displayRequirementId(i.requirementId)}.`;
+    return `قبل التنفيذ: ${req.recommendedActionAr} — لتقليل أثر القرار على متطلب «${req.nameAr}».`;
   });
   if (preventiveActionsAr.length === 0) {
     preventiveActionsAr.push("لا توجد إجراءات وقائية إضافية مطلوبة.");

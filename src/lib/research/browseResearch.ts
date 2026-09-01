@@ -11,9 +11,9 @@
 //  - METADATA_ONLY  — an official study listing / an official research-area page
 //                     (title + source + link only; NO summary, NO findings)
 //
-// It never fabricates an insight or a finding for a source whose detailed
-// content has not been ingested locally, and never presents research as
-// regulation.
+// It never fabricates an insight, finding, or statistic for a source whose
+// detailed content has not been ingested locally, and never presents research
+// as regulation.
 // =============================================================================
 
 import { getResearchCorpus, isEntryLoaded } from "./corpus";
@@ -59,12 +59,9 @@ export interface ResearchResultView {
   decisionSupportAr: string;
   topicTags: string[];
   limitationsAr: string[];
-  /** Shown for METADATA_ONLY results. */
-  unavailableNoteAr: string | null;
-  /** Provenance. */
+  /** Provenance — the official citation + the most-direct verified official link. */
   officialSourceReference: string;
   officialUrl: string | null;
-  provenanceNoteAr: string;
 }
 
 export interface ResearchSearchResponse {
@@ -163,18 +160,10 @@ function fullView(e: ResearchCorpusEntry): ResearchResultView {
     decisionSupportAr: e.scopeAr,
     topicTags: [...e.topicTags],
     limitationsAr: [...e.limitationsAr],
-    unavailableNoteAr: null,
     officialSourceReference: e.officialSourceReference,
     officialUrl: e.officialUrl,
-    provenanceNoteAr:
-      e.snapshotVerifiedAt != null
-        ? "مصدر رسمي موثّق محليًا من صفحة المعهد الرسمية."
-        : "مصدر رسمي معتمد.",
   };
 }
-
-const UNAVAILABLE_NOTE_AR =
-  "المحتوى التفصيلي غير متاح بعد؛ لا تُعرض نتائج أو ملخصات — يُكتفى بالعنوان والمصدر والرابط الرسمي.";
 
 /** A corpus entry that is not (yet) ingested → metadata only, no fabricated content. */
 function metadataViewFromCorpus(e: ResearchCorpusEntry): ResearchResultView {
@@ -193,10 +182,8 @@ function metadataViewFromCorpus(e: ResearchCorpusEntry): ResearchResultView {
     decisionSupportAr: e.scopeAr,
     topicTags: [...e.topicTags],
     limitationsAr: [...e.limitationsAr],
-    unavailableNoteAr: UNAVAILABLE_NOTE_AR,
     officialSourceReference: e.officialSourceReference,
     officialUrl: e.officialUrl,
-    provenanceNoteAr: "مرجع رسمي معتمد.",
   };
 }
 
@@ -216,10 +203,8 @@ function metadataViewFromInstitute(r: InstituteReference): ResearchResultView {
     decisionSupportAr: r.coverageAr,
     topicTags: [...r.topicTags],
     limitationsAr: [],
-    unavailableNoteAr: UNAVAILABLE_NOTE_AR,
     officialSourceReference: r.officialSourceReference,
     officialUrl: r.officialUrl,
-    provenanceNoteAr: "مرجع رسمي من صفحات المعهد الرسمية.",
   };
 }
 

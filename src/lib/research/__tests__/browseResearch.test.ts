@@ -49,6 +49,25 @@ test("the page states clearly that it searches the Institute's research", () => 
   }
 });
 
+test("reference cards drop the awkward limitation / provenance copy", () => {
+  // the "detailed content not yet available" warning box is gone entirely
+  assert.equal(page.includes("المحتوى التفصيلي غير متاح بعد"), false);
+  assert.equal(page.includes("unavailableNoteAr"), false);
+  // the redundant provenance line is gone
+  assert.equal(page.includes("provenanceNoteAr"), false);
+  // the reference section is reframed and its explanatory sentence removed
+  assert.match(page, /مراجع مرتبطة بالبحث/);
+  assert.equal(page.includes("مراجع رسمية للمعهد"), false);
+  assert.equal(
+    page.includes("صفحات وحدات ودراسات رسمية للمعهد؛ المحتوى التفصيلي غير متاح بعد"),
+    false,
+  );
+  // the metadata-card scope label is reworded, the most-direct official link stays
+  assert.match(page, /"عن المصدر"/);
+  assert.equal(page.includes("نطاق التغطية"), false);
+  assert.match(page, /فتح المصدر الرسمي/);
+});
+
 // -- housing: the reported gap is fixed ------------------------------
 
 test("searching 'الاسكان' returns approved official institute housing material", () => {
@@ -83,7 +102,8 @@ test("official metadata / area-page references carry NO insight or findings", ()
     assert.equal(m.contentAvailability, "METADATA_ONLY");
     assert.equal(m.insightAr, null);
     assert.equal(m.insightLocatorAr, null);
-    assert.match(m.unavailableNoteAr ?? "", /المحتوى التفصيلي غير متاح بعد/);
+    // no fabricated study summary / conclusion / statistic in the curated scope line
+    assert.equal(/خلص إلى|أظهرت النتائج|نتيجة الدراسة|أثبتت|بنسبة \d/.test(m.decisionSupportAr), false);
     assert.ok(m.officialSourceReference.length > 0, "provenance visible");
     // where a link exists it is an official uqu.edu.sa link (the pending PDF has none)
     if (m.officialUrl) assert.match(m.officialUrl, /^https:\/\/uqu\.edu\.sa\//);

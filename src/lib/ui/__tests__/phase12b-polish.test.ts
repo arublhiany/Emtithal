@@ -229,3 +229,60 @@ test("trust boundaries that happened to contain 'تجريبي' are NOT lost", ()
   assert.match(read("src/app/company/gaps/page.tsx"), /نقص الأدلة لا يعني عدم امتثال/);
   assert.match(read("src/app/company/research/page.tsx"), /الدراسات تدعم القرار ولا تُعد اشتراطات تنظيمية\./);
 });
+
+// -- 14. decision simulation: requirement NAME primary, code secondary ----
+
+test("DecisionResult shows the requirement Arabic name as the primary line, the code as muted secondary", () => {
+  const src = read("src/components/decision/DecisionResult.tsx").replace(/\s+/g, " ");
+  // the name is the prominent (font-medium, ink) block
+  assert.match(src, /<span className="block text-sm font-medium text-\[var\(--color-ink\)\]"> \{r\.requirementNameAr\} <\/span>/);
+  // the canonical code is the smaller, faint, explicitly-labelled traceability line
+  assert.match(src, /رمز المتطلب: \{displayRequirementId\(r\.requirementId\)\}/);
+  assert.match(
+    src,
+    /<span className="block text-\[11px\] text-\[var\(--color-ink-faint\)\]"> رمز المتطلب:/,
+  );
+  // the header no longer leads with "CODE — name"
+  assert.equal(src.includes("{displayRequirementId(r.requirementId)} — {r.requirementNameAr}"), false);
+});
+
+test("decision-engine impact sentences reference the requirement NAME, never a bare code", () => {
+  const src = read("src/lib/engine/decisionEngine.ts");
+  // no user-facing sentence interpolates a canonical/legacy code token
+  assert.equal(/جاهزية متطلب \$\{[^}]*[Ii]d[^}]*\}/.test(src), false);
+  assert.equal(src.includes("displayRequirementId"), false, "engine no longer maps codes for prose");
+  // impact / gap / preventive lines all use the name form «…nameAr»
+  assert.match(src, /في جاهزية متطلب \$\{reqName\} بمقدار \$\{pointsPhraseAr\(actualDelta\)\}/);
+  assert.match(src, /في جاهزية متطلب «\$\{i\.requirementNameAr\}» بمقدار \$\{pointsPhraseAr\(i\.delta\)\}/);
+  assert.match(src, /جاهزية متطلب «\$\{i\.requirementNameAr\}» إلى نطاق «غير ملتزم»/);
+  assert.match(src, /أثر القرار على متطلب «\$\{req\.nameAr\}»/);
+});
+
+test("a real simulation's explanations name the requirement and use natural point phrasing, not a code", async () => {
+  const { simulateDecision } = await import("@/lib/engine/decisionEngine");
+  const { getRequirements } = await import("@/lib/data/requirements");
+  const requirements = getRequirements();
+  const result = simulateDecision(
+    {
+      titleAr: "زيادة عدد الحافلات المكوكية خلال أوقات الذروة",
+      category: "service_change",
+      descriptionAr:
+        "زيادة عدد الحافلات المكوكية بنسبة 15% خلال أوقات الذروة لتقليل وقت الانتظار وتحسين تدفق الحركة.",
+      magnitudePercent: 15,
+      affectedAreaAr: "نقاط انتظار الحافلات",
+    },
+    requirements,
+  );
+  const counted = result.affectedRequirements.filter((i) => i.includedInScore);
+  assert.ok(counted.length >= 1);
+  for (const i of counted) {
+    // the sentence contains the requirement's own Arabic name, quoted
+    assert.ok(i.explanationAr.includes(`«${i.requirementNameAr}»`), i.explanationAr);
+    // …and a natural Arabic points phrase, never a bare "N نقطة/نقاط" mismatch or a code
+    assert.match(i.explanationAr, /بمقدار (نقطة واحدة|نقطتين|\d+ نقاط|\d+ نقطة)\.?/);
+    assert.equal(/CR-\d|HAJ-[A-Z]+-\d|MOH-\d/.test(i.explanationAr), false, i.explanationAr);
+  }
+  for (const line of [...result.positiveImpactsAr, ...result.negativeImpactsAr, ...result.regulatoryGapsAr]) {
+    assert.equal(/CR-\d|HAJ-[A-Z]+-\d|MOH-\d/.test(line), false, line);
+  }
+});

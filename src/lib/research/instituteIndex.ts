@@ -3,10 +3,11 @@
 //
 // Official research-area pages and official study metadata published by
 // معهد خادم الحرمين الشريفين لأبحاث الحج والعمرة (جامعة أم القرى). These are
-// SEARCHABLE REFERENCES ONLY — every entry keeps its official link and is
-// clearly marked "detailed content not yet available". No summary, no findings,
-// no fabricated passages. This index is browse-only and is NEVER used by the AI
-// orchestrator's closed-world retrieval (that stays on ingested-passage sources).
+// SEARCHABLE REFERENCES ONLY — title, source kind, the most-direct official
+// link, and a short factual scope line drawn from the official page/title.
+// No summary, no findings, no statistics, no fabricated passages. This index is
+// browse-only and is NEVER used by the AI orchestrator's closed-world retrieval
+// (that stays on ingested-passage sources).
 // =============================================================================
 
 export type InstituteReferenceKind = "AREA_PAGE" | "STUDY_METADATA";
@@ -77,6 +78,6 @@ export const INSTITUTE_REFERENCES: InstituteReference[] = [
       "قياس الجودة",
     ],
     coverageAr:
-      "دراسة مُدرجة ضمن قائمة التقارير المرحلية الرسمية للمعهد لموسم 1447هـ. المحتوى التفصيلي غير متاح بعد.",
+      "عنوان دراسة مُدرج ضمن قائمة التقارير المرحلية الرسمية للمعهد لموسم 1447هـ.",
   },
 ];

@@ -62,10 +62,7 @@ export default function ResearchSupportPage() {
 
       {references.length > 0 && (
         <div>
-          <SectionTitle hint={`${references.length}`}>مراجع رسمية للمعهد</SectionTitle>
-          <p className="mb-2 text-[11px] text-[var(--color-ink-faint)]">
-            صفحات وحدات ودراسات رسمية للمعهد؛ المحتوى التفصيلي غير متاح بعد ولا تُعرض نتائج أو ملخصات.
-          </p>
+          <SectionTitle hint={`${references.length}`}>مراجع مرتبطة بالبحث</SectionTitle>
           <div className="space-y-3">
             {references.map((r) => (
               <ResultCard key={r.researchId} r={r} />
@@ -110,15 +107,9 @@ function ResultCard({ r }: { r: ResearchResultView }) {
         </div>
       )}
 
-      {r.contentAvailability === "METADATA_ONLY" && r.unavailableNoteAr && (
-        <p className="rounded-[var(--radius-control)] bg-[var(--color-accent-tint)] px-3 py-2 text-[11px] leading-relaxed text-[var(--color-accent-dark)]">
-          {r.unavailableNoteAr}
-        </p>
-      )}
-
       <div>
         <p className="mb-1 text-[11px] font-medium text-[var(--color-ink-faint)]">
-          {r.contentAvailability === "FULL" ? "كيف يدعم القرار" : "نطاق التغطية"}
+          {r.contentAvailability === "FULL" ? "كيف يدعم القرار" : "عن المصدر"}
         </p>
         <p className="text-xs leading-relaxed text-[var(--color-ink-muted)]">{r.decisionSupportAr}</p>
       </div>
@@ -151,7 +142,6 @@ function ResultCard({ r }: { r: ResearchResultView }) {
             فتح المصدر الرسمي
           </a>
         )}
-        <p className="mt-1.5 text-[11px] text-[var(--color-ink-muted)]">{r.provenanceNoteAr}</p>
       </div>
 
       {r.limitationsAr.length > 0 && (
