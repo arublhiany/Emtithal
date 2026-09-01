@@ -121,8 +121,7 @@ export default function ImprovementPlanPage() {
       </Table>
 
       <p className="text-xs text-[var(--color-ink-muted)]">
-        «أثر تقديري» رقم إرشادي من تكوين العرض ولا يمثّل إعادة حساب فعلية لـ{READINESS_INDEX_AR}، ولا
-        يُحتسب كدرجة رسمية.
+        «أثر تقديري» رقم إرشادي فقط، ولا يمثّل إعادة حساب فعلية للمؤشر.
       </p>
     </div>
   );

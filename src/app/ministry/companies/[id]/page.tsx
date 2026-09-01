@@ -37,7 +37,7 @@ export default function MinistryCompanyDetailPage({
       <PageHead
         eyebrow="الجهات الحكومية · شركة (تجريبي)"
         title={c.nameAr}
-        subtitle="ملخّص جاهزية الشركة. لا يُحتسب أي تقييم رسمي، ونقص الأدلة لا يعني عدم امتثال."
+        subtitle="ملخّص جاهزية الشركة. نقص الأدلة لا يعني عدم امتثال."
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile label={READINESS_INDEX_AR} value={show(c.readiness)} suffix="من 100" icon="control" />
@@ -55,9 +55,8 @@ export default function MinistryCompanyDetailPage({
         <KpiTile label="انطباق غير مؤكد" value={c.applicabilityPendingCount} icon="requirements" />
       </div>
       <Panel>
-        <p className="text-xs leading-relaxed text-[var(--color-ink-muted)]">
-          بيانات هذه الشركة مشتقة من ملف الشركة التجريبي المعتمد مع اختلافات في الحقائق المُعلنة.
-          التقييم التفصيلي على مستوى كل متطلب متاح للشركة الأساسية في النموذج.
+        <p className="text-xs text-[var(--color-ink-muted)]">
+          بيانات مشتقة من الملف التجريبي المعتمد مع اختلاف في الحقائق المُعلنة.
         </p>
       </Panel>
       <Link

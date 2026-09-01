@@ -56,7 +56,7 @@ export function AlertCard({
               onClick={() => onMarkRead(alert.id)}
               className="text-[11px] font-medium text-[var(--color-primary)] hover:underline"
             >
-              وضع كمقروء
+              تحديد كمقروء
             </button>
           )}
         </div>

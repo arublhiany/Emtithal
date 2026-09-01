@@ -4,12 +4,7 @@ import { useCompanyCompliance } from "@/lib/hooks/useCompanyCompliance";
 import { PageHead, Panel, Chip, SectionTitle } from "@/components/ui/kit";
 import { Donut } from "@/components/ui/viz";
 import { CanonicalRequirementCard } from "@/components/requirements/CanonicalRequirementCard";
-import {
-  OFFICIAL_WEIGHT_NOTE_AR,
-  READINESS_INDEX_AR,
-  VERIFICATION_COVERAGE_AR,
-  show,
-} from "@/lib/ui/status";
+import { READINESS_INDEX_AR, VERIFICATION_COVERAGE_AR, show } from "@/lib/ui/status";
 
 export default function CompliancePage() {
   const {
@@ -30,7 +25,7 @@ export default function CompliancePage() {
       <PageHead
         eyebrow="الامتثال"
         title="المتطلبات التنظيمية المعتمدة"
-        subtitle={`${total} متطلبًا عبر ثلاث جهات تنظيمية. الحالة والجاهزية محسوبة آليًا على ملف الشركة التجريبي، دون درجة رسمية.`}
+        subtitle={`${total} متطلبًا عبر ثلاث جهات تنظيمية، على ملف الشركة التجريبي. لا توجد درجة إجمالية رسمية.`}
         actions={
           <Chip tone="amber" dot={false}>
             تكوين تجريبي — غير معتمد رسميًا
@@ -52,8 +47,7 @@ export default function CompliancePage() {
               : readiness.labelAr}
           </p>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-[var(--color-ink-muted)]">
-            {READINESS_INDEX_AR}: متوسط جاهزية المتطلبات المنطبقة القابلة للتقييم.{" "}
-            {OFFICIAL_WEIGHT_NOTE_AR} لا توجد درجة إجمالية رسمية.
+            {READINESS_INDEX_AR}: متوسط جاهزية المتطلبات المنطبقة القابلة للتقييم.
           </p>
           <div className="mt-2 flex flex-wrap gap-4 text-xs text-[var(--color-ink-muted)]">
             <span>

@@ -11,6 +11,7 @@ import {
   type ReportRequirementRow,
 } from "@/lib/regmgmt";
 import { AUTHORITY_NAME_AR } from "@/lib/regmgmt/labels";
+import { formatSeasonAr } from "@/lib/ui/status";
 import { getRegulatoryRequirements } from "@/lib/data/regulatory";
 import { DEMO_COMPANY_PROFILE } from "@/lib/data/demo/companyProfile";
 import { DEMO_VERIFICATION_INPUTS } from "@/lib/data/demo/verificationInputs";
@@ -51,7 +52,7 @@ function buildDemoReport(): ComplianceReport {
   });
   return buildComplianceReport({
     companyNameAr: `${DEMO_COMPANY_PROFILE.legalNameAr}`,
-    seasonAr: DEMO_COMPANY_PROFILE.season,
+    seasonAr: formatSeasonAr(DEMO_COMPANY_PROFILE.season),
     generatedAtIso: new Date().toISOString(),
     readinessIndex: run.readiness.value, // null → "—"
     verificationCoverage: run.coverage.value, // null → "—"
@@ -74,7 +75,7 @@ export default function GovernmentReportsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `emtithal-readiness-${report.seasonAr}.csv`;
+    a.download = `emtithal-readiness-${DEMO_COMPANY_PROFILE.season}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     setDone("تم تنزيل ملف CSV.");
@@ -97,7 +98,7 @@ export default function GovernmentReportsPage() {
       <PageHead
         eyebrow="الجهات الحكومية"
         title="تقرير جاهزية الامتثال"
-        subtitle="تقرير قابل للتصدير مبني على البيانات المعتمدة. ليس تقييمًا رسميًا، والقيم غير المتاحة تظهر «—»."
+        subtitle="تقرير قابل للتصدير مبني على البيانات المعتمدة. ليس تقييمًا رسميًا، وتظهر القيم غير المتاحة بالرمز «—»."
         actions={
           <>
             <Btn variant="secondary" onClick={downloadCsv}>
@@ -146,8 +147,7 @@ export default function GovernmentReportsPage() {
       </div>
 
       <p className="text-[11px] text-[var(--color-ink-faint)]">
-        تصدير هذه النسخة يعتمد الإمكانات المتاحة في المنصة دون مكتبة إضافية: تنزيل CSV، وتقرير HTML
-        جاهز للطباعة (يمكن حفظه PDF من نافذة الطباعة).
+        التصدير متاح كملف CSV أو تقرير للطباعة (يمكن حفظه PDF).
       </p>
     </div>
   );

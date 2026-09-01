@@ -118,7 +118,7 @@ function buildRequirementImpacts(
       ? `القرار المقترح على "${input.affectedAreaAr}" قد يؤدي إلى ${
           direction === "positive" ? "تحسّن" : direction === "negative" ? "تراجع" : "تأثير محدود"
         } في جاهزية متطلب ${reqLabel} بمقدار ${Math.abs(actualDelta)} نقطة.`
-      : `قد يتأثر متطلب ${reqLabel} بالقرار المقترح، لكن مستوى الثقة منخفض. الأثر المعروض (${actualDelta >= 0 ? "+" : ""}${actualDelta} نقطة) استرشادي ولم يُحتسب في المؤشر. راجع البيانات المرتبطة قبل الاعتماد على النتيجة.`;
+      : `قد يتأثر متطلب ${reqLabel} بالقرار المقترح، لكن مستوى الثقة منخفض. الأثر غير محتسب في المؤشر — راجع البيانات المرتبطة قبل الاعتماد عليه.`;
 
     impacts.push({
       requirementId: requirement.id,
@@ -301,7 +301,7 @@ function computeSimulationConfidence(
   }
   return {
     confidence: "medium",
-    reasonAr: "التحليل مبني على حالة البيانات الحالية للشركة، وليس تنبؤًا إحصائيًا.",
+    reasonAr: "يعتمد التحليل على بيانات الشركة الحالية.",
   };
 }
 

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { PageHead, Panel, SectionTitle, Chip, BoundaryChip, EmptyState } from "@/components/ui/kit";
 import { searchResearchCorpus } from "@/lib/research/browseResearch";
+import { formatSeasonAr } from "@/lib/ui/status";
 
 export default function ResearchSupportPage() {
   const [query, setQuery] = useState("");
@@ -20,9 +21,6 @@ export default function ResearchSupportPage() {
       <Panel className="border-r-2 border-[var(--color-status-compliant)]">
         <p className="text-sm text-[var(--color-ink)]">
           الدراسات تدعم القرار ولا تُعد اشتراطات تنظيمية.
-        </p>
-        <p className="mt-1 text-xs leading-relaxed text-[var(--color-ink-muted)]">
-          لا تغيّر هذه المصادر أي متطلب أو نتيجة امتثال أو جاهزية، وتُستخدم للاسترشاد فقط.
         </p>
       </Panel>
 
@@ -71,7 +69,7 @@ export default function ResearchSupportPage() {
                 <p className="text-xs text-[var(--color-ink-muted)]">
                   الجهة: <span className="text-[var(--color-ink)]">{r.publisherAr}</span>
                   {r.publicationYear ? ` · ${r.publicationYear}م` : ""}
-                  {r.seasonAr ? ` · موسم ${r.seasonAr}` : ""}
+                  {r.seasonAr ? ` · موسم ${formatSeasonAr(r.seasonAr)}` : ""}
                 </p>
 
                 {r.insightAr && (
@@ -120,12 +118,12 @@ export default function ResearchSupportPage() {
                       href={r.officialUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1 inline-block break-all text-[11px] font-semibold text-[var(--color-primary)] hover:underline"
+                      className="mt-2 inline-block rounded-[var(--radius-control)] border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-1.5 text-[11px] font-semibold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-bg)]"
                     >
-                      {r.officialUrl}
+                      فتح المصدر الرسمي
                     </a>
                   )}
-                  <p className="mt-1 text-[11px] text-[var(--color-ink-faint)]">{r.provenanceNoteAr}</p>
+                  <p className="mt-1.5 text-[11px] text-[var(--color-ink-muted)]">{r.provenanceNoteAr}</p>
                 </div>
 
                 {r.limitationsAr.length > 0 && (

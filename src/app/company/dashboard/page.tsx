@@ -109,8 +109,7 @@ export default function CompanyDashboardPage() {
           نظرة عامة على المتطلبات
         </SectionTitle>
         <p className="mb-3 text-xs text-[var(--color-ink-muted)]">
-          {applicableCount} متطلبًا منطبقًا من {canonicalRequirements.length} عبر ثلاث جهات. الحالة
-          والجاهزية محسوبة آليًا، دون درجة رسمية.
+          {applicableCount} متطلبًا منطبقًا من {canonicalRequirements.length} عبر ثلاث جهات.
         </p>
         <div className="grid gap-4 lg:grid-cols-3">
           {authoritiesView.map((a) => (

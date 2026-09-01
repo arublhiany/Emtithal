@@ -26,6 +26,7 @@ import {
   type ReqLifecycleStatus,
 } from "@/lib/regmgmt";
 import { APPLICABILITY_AR, AUTHORITY_NAME_AR } from "@/lib/regmgmt/labels";
+import { formatSeasonAr } from "@/lib/ui/status";
 
 const STATUS_TONE: Record<ReqLifecycleStatus, "green" | "amber" | "neutral" | "red"> = {
   ACTIVE: "green",
@@ -102,8 +103,7 @@ export default function RequirementDetailPage({ params }: { params: Promise<{ id
 
       {draft && (
         <AlertBanner tone="amber" title={`توجد مسودة مفتوحة — النسخة ${draft.version}`}>
-          المسودة لا تدخل حساب الامتثال أو الجاهزية. حدّد تاريخ السريان ثم فعّلها لتصبح النسخة السارية،
-          وتُستبدل النسخة الحالية مع بقائها في السجل.
+          المسودة لا تدخل في حساب الجاهزية. حدّد تاريخ السريان ثم فعّلها لتصبح النسخة السارية.
         </AlertBanner>
       )}
 
@@ -144,7 +144,7 @@ export default function RequirementDetailPage({ params }: { params: Promise<{ id
         <Panel className="grid gap-3 sm:grid-cols-2">
           <KV label="الجهة" value={AUTHORITY_NAME_AR[shown?.authorityId ?? ""] ?? "—"} />
           <KV label="المجال / المسار" value={`${shown?.domainAr ?? "—"}${shown?.trackAr ? ` / ${shown.trackAr}` : ""}`} />
-          <KV label="الموسم" value={shown?.season ?? "—"} />
+          <KV label="الموسم" value={formatSeasonAr(shown?.season)} />
           <KV label="سارٍ من" value={shown?.effectiveFrom ?? "—"} />
           <KV label="سارٍ حتى" value={shown?.effectiveUntil ?? "—"} />
           <KV label="المصدر الرسمي" value={shown?.officialSourceReferenceAr ?? "—"} />
@@ -272,8 +272,7 @@ export default function RequirementDetailPage({ params }: { params: Promise<{ id
         </SectionTitle>
         <Panel className="space-y-3">
           <p className="text-xs text-[var(--color-ink-muted)]">
-            يُحدَّد نطاق الشركات المتأثرة وفق قواعد الانطباق المعتمدة، ويصل الإشعار إلى الشركات
-            المتأثرة فقط. تغيّر المتطلب لا يجعل أي شركة «غير ملتزمة» تلقائيًا.
+            يصل الإشعار إلى الشركات المتأثرة فقط، وتغيّر المتطلب لا يجعل أي شركة «غير ملتزمة» تلقائيًا.
           </p>
           <div className="flex flex-wrap gap-2">
             {(

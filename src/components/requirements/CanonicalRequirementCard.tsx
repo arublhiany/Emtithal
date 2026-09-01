@@ -19,6 +19,12 @@ import {
  */
 export function CanonicalRequirementCard({ r }: { r: CanonicalRequirementView }) {
   const assessable = r.applicability === "APPLICABLE" && r.readiness != null;
+  // The verification status already mirrors a non-applicable / insufficient
+  // applicability outcome — show the applicability chip only when it would say
+  // something the status chip does not (no duplicate "بيانات غير كافية" pill).
+  const showApplicabilityChip =
+    r.applicability !== "APPLICABLE" &&
+    APPLICABILITY_LABEL_AR[r.applicability] !== STATUS_LABEL_AR[r.status];
   const body = (
     <>
       <div className="flex items-start justify-between gap-2">
@@ -37,7 +43,7 @@ export function CanonicalRequirementCard({ r }: { r: CanonicalRequirementView })
 
       <div className="flex flex-wrap items-center gap-1.5">
         <Chip tone={STATUS_TONE[r.status]}>{STATUS_LABEL_AR[r.status]}</Chip>
-        {r.applicability !== "APPLICABLE" && (
+        {showApplicabilityChip && (
           <Chip tone="neutral" dot={false}>
             {APPLICABILITY_LABEL_AR[r.applicability]}
           </Chip>

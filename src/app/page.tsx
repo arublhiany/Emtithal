@@ -39,33 +39,26 @@ export default function LandingPage() {
       {/* header */}
       <header className="relative overflow-hidden">
         <CircuitMotif />
-        <div className="relative mx-auto flex w-full max-w-[var(--content-max)] items-start justify-between gap-4 px-8 py-8">
+        <div className="relative mx-auto flex w-full max-w-[var(--content-max)] items-center justify-between gap-4 px-8 py-7">
           {/* logo — inline-start (right in RTL) */}
           <Logo height={54} priority />
 
-          {/* national identity + language control — inline-end (left in RTL) */}
-          <div className="flex items-center gap-4">
-            <span className="hidden text-[11px] leading-tight text-[var(--color-ink-faint)] sm:block">
-              رؤية 2030
-              <br />
-              المملكة العربية السعودية
-            </span>
-            <button
-              type="button"
-              dir="ltr"
-              onClick={() => setLang((l) => (l === "ar" ? "en" : "ar"))}
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
-              aria-label="تبديل اللغة"
-            >
-              <GlobeIcon />
-              {lang === "ar" ? LANGUAGE_CONTROL.enLabel : LANGUAGE_CONTROL.arLabel}
-            </button>
-          </div>
+          {/* language control — inline-end (left in RTL) */}
+          <button
+            type="button"
+            dir="ltr"
+            onClick={() => setLang((l) => (l === "ar" ? "en" : "ar"))}
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+            aria-label="تبديل اللغة"
+          >
+            <GlobeIcon />
+            {lang === "ar" ? LANGUAGE_CONTROL.enLabel : LANGUAGE_CONTROL.arLabel}
+          </button>
         </div>
       </header>
 
       {/* hero */}
-      <main className="flex flex-1 items-center justify-center px-6 py-12">
+      <main className="flex flex-1 items-center justify-center px-6 py-10">
         <div className="flex w-full max-w-[42rem] flex-col items-center text-center">
           <h1 className="max-w-[38rem] text-[2.15rem] font-bold leading-[1.28] text-[var(--color-ink)] sm:text-[2.9rem] sm:leading-[1.22]">
             {LANDING_HEADLINE_AR}

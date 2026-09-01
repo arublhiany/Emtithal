@@ -26,7 +26,7 @@
   /* Typography (mapped to brand) */
   --color-ink: var(--brand-ink);
   --color-ink-muted: #59605a;
-  --color-ink-faint: #8b9089;
+  --color-ink-faint: #6f746d; /* raised from #8b9089 for readable secondary text (AA-range on paper) */
 
   /* Brand: deep official green (mapped to brand) */
   --color-primary: var(--brand-green);

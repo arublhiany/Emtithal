@@ -11,10 +11,16 @@ import {
 } from "@/lib/data/regulatory";
 import { useDemoStore } from "@/lib/store/demoStore";
 import { useCompanyCompliance } from "@/lib/hooks/useCompanyCompliance";
+import { DEMO_COMPANY_PROFILE } from "@/lib/data/demo/companyProfile";
 import { PageHead, Panel, SectionTitle, Chip } from "@/components/ui/kit";
 import { ConfidenceBadge, DemoConfigBadge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/viz";
 import { DisputeReportButton } from "@/components/disputes/DisputeReportButton";
+import {
+  RECOMMENDATION_BASIS_AR,
+  RECOMMENDATION_HEADING_AR,
+  buildComplianceRecommendation,
+} from "@/lib/recommendation/complianceRecommendation";
 import { EVIDENCE_DIMENSION_STATE_LABEL, EVIDENCE_VALIDATION_LABEL } from "@/lib/labels";
 import {
   APPLICABILITY_LABEL_AR,
@@ -22,6 +28,7 @@ import {
   OFFICIAL_WEIGHT_NOTE_AR,
   STATUS_LABEL_AR,
   STATUS_TONE,
+  formatSeasonAr,
   officialWeightText,
   show,
 } from "@/lib/ui/status";
@@ -57,6 +64,33 @@ export default function RequirementDetailPage({
   const evidence = state.evidence.filter((e) => requirement.evidenceIds.includes(e.id));
   const assessable = canonical?.applicability === "APPLICABLE" && canonical?.readiness != null;
 
+  const recommendation = canonical
+    ? buildComplianceRecommendation({
+        requirementId: canonical.id,
+        titleAr: canonical.titleAr,
+        status: canonical.status,
+        applicability: canonical.applicability,
+        isUnresolvedRegulatory: canonical.isUnresolvedRegulatory,
+        isCriticalBlocker: canonical.isCriticalBlocker,
+        recommendedActionAr: requirement.recommendedActionAr,
+        incompleteEvidenceAr: requirement.evidenceDimensions
+          .filter((d) => d.state === "missing" || d.state === "unclear")
+          .map((d) => d.labelAr),
+        // approved company capability profile — applied only where it materially
+        // scopes the recommended action (see complianceRecommendation.ts)
+        company: {
+          servicesAr: DEMO_COMPANY_PROFILE.servicesAr,
+          locationsAr: DEMO_COMPANY_PROFILE.locationsAr,
+          workforceSize: DEMO_COMPANY_PROFILE.workforce.count,
+          pilgrimsServed: DEMO_COMPANY_PROFILE.pilgrims.count,
+          usesExternalProviders:
+            DEMO_COMPANY_PROFILE.declaredFacts.contractsExternalServiceProviders,
+          companyResponsibleForCamp:
+            DEMO_COMPANY_PROFILE.declaredFacts.companyResponsibleForCamp,
+        },
+      })
+    : null;
+
   return (
     <div className="space-y-6">
       <Link
@@ -74,11 +108,13 @@ export default function RequirementDetailPage({
           canonical ? (
             <>
               <Chip tone={STATUS_TONE[canonical.status]}>{STATUS_LABEL_AR[canonical.status]}</Chip>
-              {canonical.applicability !== "APPLICABLE" && (
-                <Chip tone="neutral" dot={false}>
-                  {APPLICABILITY_LABEL_AR[canonical.applicability]}
-                </Chip>
-              )}
+              {canonical.applicability !== "APPLICABLE" &&
+                APPLICABILITY_LABEL_AR[canonical.applicability] !==
+                  STATUS_LABEL_AR[canonical.status] && (
+                  <Chip tone="neutral" dot={false}>
+                    {APPLICABILITY_LABEL_AR[canonical.applicability]}
+                  </Chip>
+                )}
               {canonical.isCriticalBlocker && <Chip tone="red">عائق حرج</Chip>}
             </>
           ) : undefined
@@ -100,30 +136,29 @@ export default function RequirementDetailPage({
                 />
               </div>
             </div>
-            <p className="text-xs leading-relaxed text-[var(--color-ink-muted)]">
-              الحالة والجاهزية محسوبة آليًا. القيمة غير المتاحة تظهر «—» ولا تُحتسب صفرًا، ونقص
-              الأدلة لا يعني عدم امتثال.
+            <p className="text-xs text-[var(--color-ink-muted)]">
+              محسوبة آليًا؛ نقص الأدلة لا يعني عدم امتثال.
             </p>
-            <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-              <div className="rounded-[var(--radius-control)] bg-[var(--color-bg)] p-3">
-                <p className="mb-1 text-xs text-[var(--color-ink-muted)]">شرح الفجوة (نموذج تجريبي)</p>
-                <p className="leading-relaxed text-[var(--color-ink)]">
-                  {requirement.gapExplanationAr}
-                </p>
-              </div>
-              <div className="rounded-[var(--radius-control)] bg-[var(--color-bg)] p-3">
-                <p className="mb-1 text-xs text-[var(--color-ink-muted)]">
-                  الإجراء التصحيحي المقترح (نموذج تجريبي)
-                </p>
-                <p className="leading-relaxed text-[var(--color-ink)]">
-                  {requirement.recommendedActionAr}
-                </p>
-              </div>
+            <div className="mt-3 rounded-[var(--radius-control)] bg-[var(--color-bg)] p-3 text-sm">
+              <p className="mb-1 text-xs text-[var(--color-ink-muted)]">شرح الفجوة</p>
+              <p className="leading-relaxed text-[var(--color-ink)]">
+                {requirement.gapExplanationAr}
+              </p>
             </div>
           </Panel>
 
+          {recommendation && (
+            <Panel className="border-r-2 border-[var(--color-primary)]">
+              <SectionTitle>{RECOMMENDATION_HEADING_AR}</SectionTitle>
+              <p className="text-[11px] text-[var(--color-ink-faint)]">{RECOMMENDATION_BASIS_AR}</p>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink)]">
+                {recommendation.actionAr}
+              </p>
+            </Panel>
+          )}
+
           <Panel>
-            <SectionTitle hint="نموذج تجريبي">أبعاد الأدلة</SectionTitle>
+            <SectionTitle>أبعاد الأدلة</SectionTitle>
             <div className="space-y-2.5">
               {requirement.evidenceDimensions.map((d) => {
                 const tone = DIM_TONE[d.state];
@@ -187,7 +222,7 @@ export default function RequirementDetailPage({
 
         <div className="space-y-6">
           <Panel>
-            <SectionTitle hint="تفسير الذكاء الاصطناعي">قراءة مساعدة</SectionTitle>
+            <SectionTitle>قراءة مساعدة</SectionTitle>
             <ConfidenceBadge level={requirement.confidence} />
             <p className="mt-3 text-xs leading-relaxed text-[var(--color-ink-muted)]">
               {requirement.confidenceReasonAr}
@@ -206,7 +241,7 @@ export default function RequirementDetailPage({
               />
               <Row label="المرجع في المصفوفة" value={matrixReq?.matrixSourceRef ?? "—"} />
               <Row label="الجهة" value={canonical?.authorityNameAr ?? "—"} />
-              <Row label="الموسم" value={matrixReq?.season ?? "—"} />
+              <Row label="الموسم" value={formatSeasonAr(matrixReq?.season)} />
               <Row
                 label={OFFICIAL_WEIGHT_LABEL_AR}
                 value={officialWeightText(canonical?.officialWeightPercent ?? null)}

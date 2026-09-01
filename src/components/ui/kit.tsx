@@ -90,8 +90,8 @@ export function Chip({
 export function BoundaryChip({ kind }: { kind: "REGULATION" | "VERIFICATION" | "AI" | "RESEARCH" }) {
   const map = {
     REGULATION: { label: "تنظيمي", tone: "neutral" as Tone },
-    VERIFICATION: { label: "نتيجة تحقق حتمية", tone: "indigo" as Tone },
-    AI: { label: "تفسير الذكاء الاصطناعي", tone: "amber" as Tone },
+    VERIFICATION: { label: "نتيجة تحقق", tone: "indigo" as Tone },
+    AI: { label: "تحليل بالذكاء الاصطناعي", tone: "amber" as Tone },
     RESEARCH: { label: "دعم بحثي", tone: "green" as Tone },
   };
   const m = map[kind];

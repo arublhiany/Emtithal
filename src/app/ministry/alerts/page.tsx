@@ -28,7 +28,7 @@ export default function MinistryAlertsPage() {
         </SectionTitle>
         {regChanges.length === 0 ? (
           <EmptyState
-            title="لم تُنشأ إشعارات تغيير تنظيمي بعد"
+            title="لم تُنشأ إشعارات بتغييرات تنظيمية بعد"
             hint="تُنشأ الإشعارات تلقائيًا عند إصدار نسخة جديدة من متطلب أو إلغائه، وتُوجَّه إلى الشركات المتأثرة فقط."
           />
         ) : (

@@ -46,6 +46,14 @@ export const VERIFICATION_COVERAGE_AR = GLOSSARY_AR.VERIFICATION_COVERAGE; // "�
 export const CRITICAL_BLOCKER_AR = GLOSSARY_AR.CRITICAL_BLOCKER;
 export const UNRESOLVED_REQUIREMENT_AR = GLOSSARY_AR.UNRESOLVED_REQUIREMENT;
 
+/**
+ * Season code → Arabic display, e.g. `"1447H"` → `"1447هـ"`. Display only —
+ * the internal season identifier is never changed. `null`/`undefined` → `"—"`.
+ */
+export function formatSeasonAr(season: string | null | undefined): string {
+  return season == null || season === "" ? "—" : season.replace(/\s*H$/i, "هـ");
+}
+
 // -- official published weight (regulatory metadata, NOT a score input) --------
 
 export const OFFICIAL_WEIGHT_LABEL_AR = "الوزن الرسمي المنشور";

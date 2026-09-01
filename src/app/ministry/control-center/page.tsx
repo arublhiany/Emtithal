@@ -9,7 +9,7 @@ import { PageHead, Panel, SectionTitle, Chip } from "@/components/ui/kit";
 import { KpiTile, ProgressBar } from "@/components/ui/viz";
 import { CompanyTable } from "@/components/ministry/CompanyTable";
 import { AlertCard } from "@/components/alerts/AlertCard";
-import { READINESS_INDEX_AR, STATUS_LABEL_AR, STATUS_TONE, show } from "@/lib/ui/status";
+import { STATUS_LABEL_AR, STATUS_TONE, show } from "@/lib/ui/status";
 import { CANONICAL_DEMO_COMPANY_ID } from "@/lib/data/demo/companyProfile";
 
 export default function MinistryControlCenterPage() {
@@ -26,12 +26,12 @@ export default function MinistryControlCenterPage() {
       <PageHead
         eyebrow="الجهات الحكومية"
         title="مركز التحكم الرقابي"
-        subtitle="متابعة جاهزية الامتثال عبر الشركات، وإدارة دورة حياة المتطلبات — على بيانات تجريبية معتمدة."
+        subtitle="متابعة جاهزية الشركات وإدارة دورة حياة المتطلبات، على بيانات تجريبية."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile
-          label={`متوسط ${READINESS_INDEX_AR} (تجريبي)`}
+          label="متوسط مؤشر الجاهزية"
           value={show(portfolio.portfolioReadiness)}
           suffix="من 100"
           icon="control"

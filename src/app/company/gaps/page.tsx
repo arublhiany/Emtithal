@@ -48,14 +48,14 @@ export default function GapsPage() {
       {nothing ? (
         <EmptyState
           title="لا توجد فجوات مفتوحة"
-          hint="جميع المتطلبات المنطبقة القابلة للتقييم ضمن الحدود، ولا توجد بنود بانتظار التحقق."
+          hint="جميع المتطلبات المنطبقة القابلة للتقييم ضمن الحدود."
         />
       ) : (
         <div className="space-y-5">
           <GapGroup
             title="عوائق حرجة"
             tone="red"
-            hint="متطلب حرج بحالة غير ملتزم — يُعالج قبل أي إجراء آخر."
+            hint="تُعالج قبل أي إجراء آخر."
             items={criticalBlockers.map((b) => ({
               key: b.requirementId,
               primary: `${b.requirementId} — ${b.titleAr}`,
@@ -65,7 +65,7 @@ export default function GapsPage() {
           <GapGroup
             title="فجوات التحقق"
             tone="amber"
-            hint="متطلبات منطبقة بحالة ملتزم جزئيًا أو غير ملتزم، دون أن تكون عائقًا حرجًا."
+            hint="متطلبات ملتزمة جزئيًا أو غير ملتزمة، وليست عائقًا حرجًا."
             items={nonBlockerGaps.map((g) => ({
               key: g.requirementId,
               primary: `${g.requirementId} — ${g.titleAr}`,
@@ -80,32 +80,32 @@ export default function GapsPage() {
           <GapGroup
             title="بانتظار التحقق"
             tone="indigo"
-            hint="بيانات مُعلنة لم تُعتمد بعد — ليست عدم امتثال ولا تُحتسب صفرًا."
+            hint="بيانات مُعلنة لم تُعتمد بعد."
             items={pendingWarnings.map((id) => ({ key: id, primary: label(id) }))}
           />
           <GapGroup
             title="بيانات غير كافية"
             tone="neutral"
-            hint="لا تتوفر بيانات كافية لتقييم المتطلب — لا يُفسَّر كعدم امتثال."
+            hint="لا تتوفر بيانات كافية للتقييم."
             items={insufficientDataWarnings.map((id) => ({ key: id, primary: label(id) }))}
           />
           <GapGroup
             title={UNRESOLVED_REQUIREMENT_AR}
             tone="amber"
-            hint="متطلب قيد الاستكمال على مستوى التنظيم — لا يُحتسب على الشركة ولا يدخل في حساب الجاهزية."
+            hint="قيد الاستكمال على مستوى التنظيم؛ لا يُحتسب على الشركة."
             items={regulatoryPendingIds.map((id) => ({ key: id, primary: label(id) }))}
           />
           <GapGroup
             title="انطباق غير مؤكد"
             tone="neutral"
-            hint="لم يتضح ما إذا كان المتطلب ينطبق على الشركة — يلزم استكمال بيانات الملف."
+            hint="لم يتضح انطباقه على الشركة؛ يلزم استكمال بيانات الملف."
             items={applicabilityPendingIds.map((id) => ({ key: id, primary: label(id) }))}
           />
         </div>
       )}
 
       <p className="text-xs text-[var(--color-ink-muted)]">
-        استكمال الأدلة وربط مصادر البيانات يعالج بنود «بانتظار التحقق» و«بيانات غير كافية».{" "}
+        استكمال الأدلة يعالج بنود «بانتظار التحقق» و«بيانات غير كافية».{" "}
         <Link href="/company/evidence" className="font-semibold text-[var(--color-primary)] hover:underline">
           إدارة الأدلة ←
         </Link>

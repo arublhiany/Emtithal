@@ -41,7 +41,7 @@ export default function MinistryReviewsPage() {
       <PageHead
         eyebrow="الجهات الحكومية"
         title="طابور المراجعة"
-        subtitle="ثلاثة مسارات منفصلة: اعتراضات على تفسير الذكاء الاصطناعي، أدلة تحتاج تحققًا بشريًا، ومتطلبات قيد الاستكمال تنظيميًا."
+        subtitle="ثلاثة مسارات منفصلة: اعتراضات على نتائج التحليل، أدلة تحتاج تحققًا بشريًا، ومتطلبات قيد الاستكمال تنظيميًا."
       />
 
       <div>
@@ -53,10 +53,10 @@ export default function MinistryReviewsPage() {
             </span>
           }
         >
-          اعتراضات على تفسير الذكاء الاصطناعي
+          اعتراضات على نتائج التحليل
         </SectionTitle>
         {state.tickets.length === 0 ? (
-          <EmptyState title="لا توجد اعتراضات مفتوحة على تفسير الذكاء الاصطناعي" />
+          <EmptyState title="لا توجد اعتراضات مفتوحة على نتائج التحليل" />
         ) : (
           <Panel className="space-y-3">
             {state.tickets.map((t) => (
@@ -145,7 +145,7 @@ export default function MinistryReviewsPage() {
           {UNRESOLVED_REQUIREMENT_AR}
         </SectionTitle>
         <p className="mb-2 text-xs text-[var(--color-ink-muted)]">
-          فجوة في المصفوفة التنظيمية المعتمدة لدينا — لا تُنسب إلى الشركة ولا تدخل حساب الجاهزية.
+          لا تُنسب إلى الشركة ولا تدخل في حساب الجاهزية.
         </p>
         {regulatoryPendingIds.length === 0 ? (
           <EmptyState title="لا توجد متطلبات قيد الاستكمال تنظيميًا" />

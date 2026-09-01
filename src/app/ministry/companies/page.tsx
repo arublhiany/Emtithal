@@ -4,7 +4,7 @@ import { useGovernmentPortfolio } from "@/lib/hooks/useGovernmentPortfolio";
 import { PageHead } from "@/components/ui/kit";
 import { KpiTile } from "@/components/ui/viz";
 import { CompanyTable } from "@/components/ministry/CompanyTable";
-import { READINESS_INDEX_AR, show } from "@/lib/ui/status";
+import { show } from "@/lib/ui/status";
 
 export default function MinistryCompaniesPage() {
   const p = useGovernmentPortfolio();
@@ -19,7 +19,7 @@ export default function MinistryCompaniesPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile label="عدد الشركات" value={p.count} icon="companies" />
         <KpiTile
-          label={`متوسط ${READINESS_INDEX_AR}`}
+          label="متوسط مؤشر الجاهزية"
           value={show(p.portfolioReadiness)}
           suffix="من 100"
           icon="control"

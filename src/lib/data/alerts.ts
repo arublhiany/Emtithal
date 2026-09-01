@@ -11,7 +11,7 @@ export function getSeedAlerts(): AlertItem[] {
       id: "ALERT-001",
       companyId: DEMO_COMPANY_ID,
       type: "critical_gap",
-      titleAr: "فجوة حرجة في معيار ضمان حفظ حقوق ضيف الرحمن",
+      titleAr: "فجوة حرجة في متطلب ضمان حفظ حقوق ضيف الرحمن",
       descriptionAr:
         "متطلب HAJ-EXP-03 حرج بحالة غير ملتزم — يتطلب إجراءً تصحيحيًا فوريًا ومراجعة بشرية.",
       severity: "critical",
@@ -23,7 +23,7 @@ export function getSeedAlerts(): AlertItem[] {
       id: "ALERT-002",
       companyId: DEMO_COMPANY_ID,
       type: "missing_evidence",
-      titleAr: "أدلة ناقصة لمعيار حفظ حقوق ضيف الرحمن",
+      titleAr: "أدلة ناقصة لمتطلب حفظ حقوق ضيف الرحمن",
       descriptionAr: "سجلات فترتين من أصل ثلاث لفعاليات التوعية بالحقوق غير مرفوعة بعد.",
       severity: "high",
       requirementId: "CR-003",

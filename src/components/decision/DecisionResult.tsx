@@ -70,23 +70,27 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
                   {displayRequirementId(r.requirementId)} — {r.requirementNameAr}
                 </span>
                 <span className="flex items-center gap-2 text-xs">
-                  <span className="tabular-nums text-[var(--color-ink-muted)]">
-                    {r.currentScore} ← {r.predictedScore}
-                  </span>
-                  <span
-                    className={`font-semibold tabular-nums ${
-                      r.direction === "negative"
-                        ? "text-[var(--color-status-noncompliant)]"
-                        : r.direction === "positive"
-                          ? "text-[var(--color-status-compliant)]"
-                          : "text-[var(--color-ink-muted)]"
-                    }`}
-                  >
-                    ({r.delta > 0 ? "+" : ""}
-                    {r.delta})
-                  </span>
+                  {r.includedInScore ? (
+                    <>
+                      <span className="tabular-nums text-[var(--color-ink-muted)]">
+                        {r.currentScore} ← {r.predictedScore}
+                      </span>
+                      <span
+                        className={`font-semibold tabular-nums ${
+                          r.direction === "negative"
+                            ? "text-[var(--color-status-noncompliant)]"
+                            : r.direction === "positive"
+                              ? "text-[var(--color-status-compliant)]"
+                              : "text-[var(--color-ink-muted)]"
+                        }`}
+                      >
+                        ({r.delta > 0 ? "+" : ""}
+                        {r.delta})
+                      </span>
+                      <RiskBadge level={r.riskLevel} size="sm" />
+                    </>
+                  ) : null}
                   <ConfidenceBadge level={r.confidence} size="sm" />
-                  {r.includedInScore && <RiskBadge level={r.riskLevel} size="sm" />}
                 </span>
               </div>
               <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">
@@ -94,7 +98,7 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
               </p>
               {!r.includedInScore && (
                 <p className="text-[11px] text-[var(--color-accent-dark)] mt-1.5 font-medium">
-                  أثر غير مؤكد — لم يُحتسب في المؤشر.
+                  أثر محتمل — غير محتسب في المؤشر
                 </p>
               )}
             </div>
