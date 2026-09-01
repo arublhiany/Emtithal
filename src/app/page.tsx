@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDemoStore } from "@/lib/store/demoStore";
 import { Logo } from "@/components/ui/Logo";
 import {
-  AI_DISCLAIMER_AR,
+  AI_INTELLIGENCE_LINE_AR,
   COMPANY_CTA_AR,
   COMPANY_ENTRY_ROLE,
   GOVERNMENT_CTA_AR,
@@ -15,9 +15,9 @@ import {
   LANGUAGE_CONTROL,
 } from "@/lib/ui/landing";
 
-// Public landing — rebuilt to the approved Figma reference: a calm, centred
-// hero over a faint circuit motif, a subtle AI-disclaimer chip, and a single
-// bordered "تسجيل الدخول" card with the two entry actions. All Arabic copy is
+// Public landing — the approved reference: a calm, centred hero over a faint
+// circuit motif, a subtle intelligence line, and a single bordered
+// "تسجيل الدخول" card with the two entry actions. All Arabic copy is
 // the locked set from `@/lib/ui/landing`; the canonical logo asset is used
 // unchanged. No self-registration (removed by earlier product-owner approval).
 export default function LandingPage() {
@@ -69,7 +69,7 @@ export default function LandingPage() {
           </p>
 
           <p className="mx-auto mt-7 inline-block rounded-[12px] bg-[var(--color-primary-tint)] px-5 py-2.5 text-[12.5px] leading-relaxed text-[var(--color-primary)]">
-            {AI_DISCLAIMER_AR}
+            {AI_INTELLIGENCE_LINE_AR}
           </p>
 
           {/* login card */}

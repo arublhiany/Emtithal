@@ -86,7 +86,7 @@ export function AppShell({
               )}
             </Link>
             <span className="hidden items-center rounded-full bg-[var(--color-primary-tint)] px-3 py-1.5 text-xs font-medium text-[var(--color-primary)] sm:inline-flex">
-              موسم 1447هـ — بيئة عرض تجريبي
+              موسم 1447هـ — بيئة عرض
             </span>
           </div>
         </header>

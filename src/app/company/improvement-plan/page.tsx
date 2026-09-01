@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useDemoStore } from "@/lib/store/demoStore";
 import { PageHead, Panel, Table, Td, Chip } from "@/components/ui/kit";
-import { ActionStatusBadge, DemoConfigBadge } from "@/components/ui/Badge";
+import { ActionStatusBadge } from "@/components/ui/Badge";
 import { PRIORITY_LABEL, ACTION_STATUS_LABEL } from "@/lib/labels";
 import { displayRequirementId } from "@/lib/data/regulatory";
 import { READINESS_INDEX_AR } from "@/lib/ui/status";
@@ -52,9 +52,6 @@ export default function ImprovementPlanPage() {
             +{expectedGain}
             <span className="text-xs font-normal text-[var(--color-ink-faint)]">نقطة تقريبًا</span>
           </p>
-          <div className="mt-1">
-            <DemoConfigBadge />
-          </div>
         </Panel>
       </div>
 

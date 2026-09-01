@@ -36,18 +36,18 @@ interface Variant {
 const VARIANTS: Variant[] = [
   {
     companyId: "demo-gov-var-02",
-    nameAr: "(تجريبي) مؤسسة الصفا لضيافة الحجاج",
+    nameAr: "مؤسسة الصفا لضيافة الحجاج",
     experienceTrackScopeDeclared: true,
     companyResponsibleForCamp: true,
   },
   {
     companyId: "demo-gov-var-03",
-    nameAr: "(تجريبي) شركة المروة للخدمات المتكاملة",
+    nameAr: "شركة المروة للخدمات المتكاملة",
     experienceTrackScopeDeclared: false, // out of the experience track → NOT_APPLICABLE
   },
   {
     companyId: "demo-gov-var-04",
-    nameAr: "(تجريبي) مجموعة البركة لخدمات الحجيج",
+    nameAr: "مجموعة البركة لخدمات الحجيج",
     experienceTrackScopeDeclared: null, // undeclared → INSUFFICIENT_DATA
   },
 ];

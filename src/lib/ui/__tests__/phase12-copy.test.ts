@@ -12,7 +12,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 import {
-  AI_DISCLAIMER_AR,
+  AI_INTELLIGENCE_LINE_AR,
   COMPANY_CTA_AR,
   GOVERNMENT_CTA_AR,
   LANDING_FOOTER_AR,
@@ -140,22 +140,22 @@ test("landing copy constants are unchanged (approved Figma copy, locked)", () =>
   assert.equal(COMPANY_CTA_AR, "دخول الشركات");
   assert.equal(
     LANDING_HEADLINE_AR,
-    "يكشف مخاطر عدم الامتثال مبكرًا ويحاكي أثر القرارات قبل تنفيذها",
+    "يكشف مخاطر عدم الامتثال مبكرًا ويحاكي أثر القرارات قبل تنفيذها.",
   );
   assert.equal(
     LANDING_SUPPORTING_AR,
-    "منصة تربط اشتراطات الجهات الحكومية بأدلة وبيانات كل شركة، لقياس الجاهزية وكشف الفجوات قبل التفتيش.",
+    "منصة ذكاء تنظيمي تجمع اشتراطات الجهات الحكومية ذات العلاقة بالحج والعمرة، وتربطها بأدلة وبيانات الشركات، لتكشف فجوات الامتثال، وتتوقع أثر السيناريوهات التشغيلية، وتقترح البدائل الأقل خطورة قبل اتخاذ القرار.",
   );
   assert.equal(
-    AI_DISCLAIMER_AR,
-    "تحليلات الذكاء الاصطناعي مساندة للقرار وقابلة للمراجعة البشرية — لا تحل محل السلطة التنظيمية.",
+    AI_INTELLIGENCE_LINE_AR,
+    "عبر ذكاء اصطناعي يحلل المخاطر ويحاكي أثر القرارات قبل تنفيذها",
   );
   assert.equal(LANDING_FOOTER_AR, "امتثال © 1447هـ");
 
   // the landing page renders those constants and adds no extra hard-coded copy
   const page = readFileSync(path.join(ROOT, "src/app/page.tsx"), "utf8");
   assert.match(page, /LANDING_HEADLINE_AR/);
-  assert.match(page, /AI_DISCLAIMER_AR/);
+  assert.match(page, /AI_INTELLIGENCE_LINE_AR/);
 });
 
 // -- 7. general product UI prefers متطلب over معيار ------------------

@@ -21,7 +21,7 @@ export default function MinistryCompanyDetailPage({
     return (
       <div>
         <PageHead eyebrow="الجهات الحكومية" title="الشركة غير موجودة" />
-        <EmptyState title="لا توجد شركة بهذا المعرّف ضمن المحفظة التجريبية." hint={id} />
+        <EmptyState title="لا توجد شركة بهذا المعرّف." hint={id} />
         <Link
           href="/ministry/companies"
           className="mt-4 inline-block text-sm font-semibold text-[var(--color-primary)]"
@@ -35,7 +35,7 @@ export default function MinistryCompanyDetailPage({
   return (
     <div className="space-y-6">
       <PageHead
-        eyebrow="الجهات الحكومية · شركة (تجريبي)"
+        eyebrow="الجهات الحكومية · شركة"
         title={c.nameAr}
         subtitle="ملخّص جاهزية الشركة. نقص الأدلة لا يعني عدم امتثال."
       />
@@ -56,7 +56,7 @@ export default function MinistryCompanyDetailPage({
       </div>
       <Panel>
         <p className="text-xs text-[var(--color-ink-muted)]">
-          بيانات مشتقة من الملف التجريبي المعتمد مع اختلاف في الحقائق المُعلنة.
+          بيانات مشتقة من ملف الشركة المعتمد مع اختلاف في الحقائق المُعلنة.
         </p>
       </Panel>
       <Link

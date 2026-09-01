@@ -4,7 +4,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { formatSeasonAr } from "@/lib/ui/status";
@@ -173,5 +173,59 @@ test("landing carries no simulated Vision 2030 / national identity text", () => 
   // canonical logo + locked copy references intact
   assert.match(src, /<Logo\b/);
   assert.match(src, /LANDING_HEADLINE_AR/);
-  assert.match(src, /AI_DISCLAIMER_AR/);
+  assert.match(src, /AI_INTELLIGENCE_LINE_AR/);
+});
+
+// -- 13. repetitive "تجريبي" clutter removed; one global "بيئة عرض" marker ----
+
+function walkTsx(dir: string): string[] {
+  const out: string[] = [];
+  for (const e of readdirSync(dir)) {
+    const full = path.join(dir, e);
+    if (statSync(full).isDirectory()) {
+      if (/__tests__/.test(full)) continue;
+      out.push(...walkTsx(full));
+    } else if (full.endsWith(".tsx")) out.push(full);
+  }
+  return out;
+}
+
+test("exactly one persistent global environment marker ('موسم 1447هـ — بيئة عرض')", () => {
+  const shell = read("src/components/layout/AppShell.tsx");
+  assert.match(shell, /موسم 1447هـ — بيئة عرض(?!\s*تجريبي)/);
+  assert.equal(shell.includes("بيئة عرض تجريبي"), false);
+  // the sidebar no longer carries its own "بيئة تجريبية" marker
+  const sidebar = read("src/components/layout/Sidebar.tsx");
+  assert.equal(sidebar.includes("بيئة تجريبية"), false);
+});
+
+test("no repetitive 'تجريبي' clutter in page titles / KPI labels / company titles", () => {
+  const stripComments = (s: string) =>
+    s.split("\n").filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l.trim())).join("\n");
+  const offenders: string[] = [];
+  for (const f of [...walkTsx(path.join(ROOT, "src/app")), ...walkTsx(path.join(ROOT, "src/components"))]) {
+    if (f.endsWith("AppShell.tsx")) continue; // the one allowed marker
+    if (f.endsWith("Badge.tsx")) continue; // DemoConfigBadge kept as a short "بيانات عرض" label
+    const body = stripComments(readFileSync(f, "utf8"));
+    if (/\(تجريبي\)|تكوين تجريبي|عرض تجريبي|نموذج تجريبي|بيئة تجريبية|بيانات تجريبية|المحفظة التجريبية|الملف التجريبي/.test(body)) {
+      offenders.push(path.relative(ROOT, f));
+    }
+  }
+  assert.deepEqual(offenders, []);
+});
+
+test("the primary demo company name carries no '(عرض تجريبي)' prefix", () => {
+  const src = read("src/lib/data/demo/companyProfile.ts");
+  assert.match(src, /legalNameAr:\s*"شركة نموذج امتثال للحج والعمرة"/);
+  assert.equal(src.includes("(عرض تجريبي)"), false);
+  const gov = read("src/lib/data/demo/governmentPortfolio.ts");
+  assert.equal(gov.includes("(تجريبي)"), false);
+});
+
+test("trust boundaries that happened to contain 'تجريبي' are NOT lost", () => {
+  assert.match(read("src/app/company/compliance/page.tsx"), /لا توجد درجة إجمالية رسمية/);
+  assert.match(read("src/app/ministry/companies/page.tsx"), /دون درجة رسمية/);
+  assert.match(read("src/app/company/evidence/page.tsx"), /رفع ملف لا يعني التحقق منه/);
+  assert.match(read("src/app/company/gaps/page.tsx"), /نقص الأدلة لا يعني عدم امتثال/);
+  assert.match(read("src/app/company/research/page.tsx"), /الدراسات تدعم القرار ولا تُعد اشتراطات تنظيمية\./);
 });

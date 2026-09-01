@@ -32,7 +32,7 @@ import {
 import { getRequirementByCanonicalId } from "@/lib/data/regulatory";
 import { getDemoGovernmentPortfolio } from "@/lib/data/demo/governmentPortfolio";
 
-const ACTOR_AR = "مستخدم حكومي (بيئة تجريبية)";
+const ACTOR_AR = "مستخدم حكومي";
 const now = () => new Date().toISOString();
 
 type Cmd =

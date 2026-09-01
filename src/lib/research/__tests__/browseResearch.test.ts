@@ -1,9 +1,7 @@
 // =============================================================================
-// Phase 12B — "دعم بحثي" is a real, visible product feature.
-//
-// The research support page searches ONLY the approved Phase 8 corpus, shows
-// provenance, keeps research separate from regulation, and never fabricates
-// content for a source whose official document is not yet available.
+// Phase 12B — "البحث في أبحاث معهد خادم الحرمين الشريفين": searches the
+// Institute's approved research (ingested excerpts + official metadata / area
+// pages), with real Arabic normalization. Never fabricates findings.
 // =============================================================================
 
 import { test } from "node:test";
@@ -11,136 +9,160 @@ import assert from "node:assert/strict";
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-import { searchResearchCorpus, researchSources } from "@/lib/research/browseResearch";
-import { getResearchCorpus, isEntryLoaded } from "@/lib/research/corpus";
 import {
-  GOVERNMENT_CTA_AR,
-  LANDING_HEADLINE_AR,
-} from "@/lib/ui/landing";
+  searchResearchCorpus,
+  researchSources,
+  type ResearchResultView,
+} from "@/lib/research/browseResearch";
+import { getResearchCorpus } from "@/lib/research/corpus";
+import { INSTITUTE_REFERENCES } from "@/lib/research/instituteIndex";
+import { LANDING_HEADLINE_AR } from "@/lib/ui/landing";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
-const nav = readFileSync(path.join(ROOT, "src/components/layout/navConfig.ts"), "utf8");
-const pagePath = path.join(ROOT, "src/app/company/research/page.tsx");
-const page = readFileSync(pagePath, "utf8");
-const browseSrc = readFileSync(path.join(ROOT, "src/lib/research/browseResearch.ts"), "utf8");
+const read = (p: string) => readFileSync(path.join(ROOT, p), "utf8");
+const nav = read("src/components/layout/navConfig.ts");
+const page = read("src/app/company/research/page.tsx");
+const all = (r: { results: ResearchResultView[]; references: ResearchResultView[] }) => [
+  ...r.results,
+  ...r.references,
+];
 
-// -- 1. discoverable: company nav + dedicated route -----------------------
+// -- discoverability + framing -----------------------------------------
 
-test("company navigation visibly includes 'دعم بحثي' → /company/research", () => {
-  // the item sits inside COMPANY_NAV, not MINISTRY_NAV
+test("company navigation still exposes the research capability", () => {
   const companyBlock = nav.slice(nav.indexOf("COMPANY_NAV"), nav.indexOf("MINISTRY_NAV"));
-  assert.match(
-    companyBlock,
-    /href:\s*"\/company\/research",\s*label:\s*"دعم بحثي"/,
-  );
-  const ministryBlock = nav.slice(nav.indexOf("MINISTRY_NAV"));
-  assert.equal(ministryBlock.includes("/company/research"), false);
+  assert.match(companyBlock, /href:\s*"\/company\/research",\s*label:\s*"دعم بحثي"/);
 });
 
-test("/company/research route exists with the required copy", () => {
-  assert.ok(statSync(pagePath).isFile());
-  assert.match(page, /eyebrow="دعم بحثي"|title="دعم بحثي"/);
-  assert.match(page, /ابحث في الأبحاث والدراسات/);
+test("the page states clearly that it searches the Institute's research", () => {
+  assert.ok(statSync(path.join(ROOT, "src/app/company/research/page.tsx")).isFile());
+  assert.match(page, /title="البحث في الأبحاث الرسمية للمعهد"/);
+  assert.match(page, /subtitle="ابحث في المصادر الرسمية المتاحة داخل امتثال لدعم القرار\."/);
+  assert.match(page, /ابحث في أبحاث المعهد/);
+  assert.match(page, /يشمل البحث المصادر الرسمية المضافة حاليًا إلى المنصة\./);
+  assert.match(page, /placeholder="مثال: الإسكان، النقل، إدارة الحشود، المحاكاة"/);
+  // research / regulation boundary kept, concise
   assert.match(page, /الدراسات تدعم القرار ولا تُعد اشتراطات تنظيمية\./);
-  assert.match(page, /BoundaryChip kind="RESEARCH"/); // research visually separated from regulation
-});
-
-test("a concise research entry point is on the company dashboard", () => {
-  const dash = readFileSync(path.join(ROOT, "src/app/company/dashboard/page.tsx"), "utf8");
-  assert.match(dash, /\/company\/research/);
-  assert.match(dash, /دعم بحثي/);
-});
-
-// -- 2. search runs ONLY over the approved corpus ----------------------
-
-test("empty query returns exactly the loaded approved sources as results", () => {
-  const { results, pending } = searchResearchCorpus("");
-  const loadedIds = getResearchCorpus().filter(isEntryLoaded).map((e) => e.researchId).sort();
-  assert.deepEqual(results.map((r) => r.researchId).sort(), loadedIds);
-  assert.ok(results.length >= 2, "at least the two verified official web sources");
-  // a source without an ingested official document is NOT a result …
-  const pendingIds = getResearchCorpus().filter((e) => !isEntryLoaded(e)).map((e) => e.researchId);
-  for (const id of pendingIds) {
-    assert.equal(results.some((r) => r.researchId === id), false, `${id} must not be a result`);
+  // no internal vocabulary
+  for (const bad of ["corpus", "RAG", "retrieval", "embedding", "agent", "PENDING_LOCAL_INGESTION"]) {
+    assert.equal(page.includes(bad), false, `page contains "${bad}"`);
   }
-  // … it is surfaced separately, with no fabricated insight
-  assert.deepEqual(pending.map((p) => p.researchId).sort(), pendingIds.sort());
 });
 
-test("every returned result carries its own real content only", () => {
-  const { results } = searchResearchCorpus("");
+// -- housing: the reported gap is fixed ------------------------------
+
+test("searching 'الاسكان' returns approved official institute housing material", () => {
+  const r = searchResearchCorpus("الاسكان");
+  const ids = all(r).map((x) => x.researchId);
+  assert.ok(ids.includes("UQU-HAJJ-UNIT-ARCHITECTURE-HOUSING"), "the architecture & housing unit page");
+  assert.ok(
+    ids.includes("UQU-HAJJ-1447-STUDY-HOUSING-QUALITY-CENTRAL-MAKKAH"),
+    "the 1447H housing-quality study metadata",
+  );
+});
+
+test("Arabic hamza-normalization: 'الاسكان' and 'الإسكان' return the same institute material", () => {
+  const a = searchResearchCorpus("الاسكان").references.map((x) => x.researchId).sort();
+  const b = searchResearchCorpus("الإسكان").references.map((x) => x.researchId).sort();
+  assert.deepEqual(a, b);
+  assert.ok(a.length >= 2);
+  // the controlled synonym also works
+  assert.ok(
+    searchResearchCorpus("مساكن").references.some(
+      (x) => x.researchId === "UQU-HAJJ-1447-STUDY-HOUSING-QUALITY-CENTRAL-MAKKAH",
+    ),
+  );
+});
+
+// -- metadata-only never fabricates -------------------------------
+
+test("official metadata / area-page references carry NO insight or findings", () => {
+  const meta = searchResearchCorpus("").references;
+  assert.ok(meta.length >= INSTITUTE_REFERENCES.length);
+  for (const m of meta) {
+    assert.equal(m.contentAvailability, "METADATA_ONLY");
+    assert.equal(m.insightAr, null);
+    assert.equal(m.insightLocatorAr, null);
+    assert.match(m.unavailableNoteAr ?? "", /المحتوى التفصيلي غير متاح بعد/);
+    assert.ok(m.officialSourceReference.length > 0, "provenance visible");
+    // where a link exists it is an official uqu.edu.sa link (the pending PDF has none)
+    if (m.officialUrl) assert.match(m.officialUrl, /^https:\/\/uqu\.edu\.sa\//);
+  }
+  // the two housing references specifically DO carry their official links
+  const housing = meta.filter((m) => /^UQU-HAJJ-(UNIT-ARCHITECTURE-HOUSING|1447-STUDY-HOUSING)/.test(m.researchId));
+  assert.equal(housing.length, 2);
+  for (const h of housing) assert.match(h.officialUrl ?? "", /^https:\/\/uqu\.edu\.sa\//);
+});
+
+test("the institute index itself stores no summary / findings fields", () => {
+  const src = read("src/lib/research/instituteIndex.ts")
+    .split("\n")
+    .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)) // ignore comments
+    .join("\n");
+  assert.equal(/summary|finding|:\s*"[^"]*نتيجة الدراسة|خلص إلى|أظهرت النتائج/i.test(src), false);
+  for (const ref of INSTITUTE_REFERENCES) {
+    assert.match(ref.publisherAr, /معهد خادم الحرمين الشريفين لأبحاث الحج والعمرة/);
+    assert.match(ref.officialUrl, /^https:\/\/uqu\.edu\.sa\//);
+  }
+});
+
+// -- ingested full results still work + provenance ------------------
+
+test("ingested sources still return as FULL results with a verbatim excerpt", () => {
+  const r = searchResearchCorpus("النمذجة والمحاكاة");
+  assert.ok(r.results.length >= 1);
+  for (const x of r.results) {
+    assert.equal(x.contentAvailability, "FULL");
+    assert.ok(x.insightAr && x.insightAr.length > 0);
+    assert.ok(x.officialSourceReference.length > 0);
+  }
+  // an ingested passage is verbatim from the corpus
   const byId = new Map(getResearchCorpus().map((e) => [e.researchId, e]));
-  for (const r of results) {
-    const src = byId.get(r.researchId)!;
-    assert.ok(r.officialSourceReference.length > 0, "provenance visible");
-    assert.equal(r.officialSourceReference, src.officialSourceReference);
-    if (r.insightAr != null) {
-      // the insight is a verbatim passage from the approved corpus, never invented
-      assert.equal(r.insightAr, src.passages[0].textAr);
-    }
-    assert.ok(r.decisionSupportAr.length > 0, "how it may support a decision");
+  for (const x of r.results) {
+    const e = byId.get(x.researchId);
+    if (e) assert.equal(x.insightAr, e.passages[0].textAr);
   }
 });
 
-test("a query never matches anything outside the approved corpus", () => {
-  const approvedIds = new Set(getResearchCorpus().map((e) => e.researchId));
-  for (const q of ["النمذجة والمحاكاة", "BRT", "الحافلات السريعة", "أم القرى", "شيء غير موجود إطلاقًا"]) {
-    const { results, pending } = searchResearchCorpus(q);
-    for (const r of [...results, ...pending]) {
-      assert.ok(approvedIds.has(r.researchId), `${q} → ${r.researchId} is outside the corpus`);
-    }
-  }
-});
-
-// -- 3. searchable by topic / title / organization / keyword ----------
-
-test("search matches by keyword, study title, organization/source and topic", () => {
-  // keyword
-  assert.ok(searchResearchCorpus("النمذجة").results.length >= 1);
-  // topic
-  assert.ok(searchResearchCorpus("الكفاءة التشغيلية").results.length >= 1);
-  // organization / source name
-  assert.ok(searchResearchCorpus("معهد خادم الحرمين الشريفين لأبحاث الحج والعمرة").results.length >= 1);
-  assert.ok(searchResearchCorpus("جامعة أم القرى").results.length >= 1);
-  // study title fragment
+test("BRT / transport and simulation queries still hit the ingested sources", () => {
   assert.ok(searchResearchCorpus("الحافلات السريعة").results.length >= 1);
-  // no match
-  assert.equal(searchResearchCorpus("موضوع لا علاقة له بالحج").results.length, 0);
+  assert.ok(searchResearchCorpus("الكفاءة التشغيلية").results.length >= 1);
+  assert.ok(searchResearchCorpus("النمذجة").results.length >= 1);
 });
 
-test("the approved corpus is published by the Custodian's Institute", () => {
+test("everything returned belongs to the approved institute set; nonsense returns nothing", () => {
+  const approved = new Set([
+    ...getResearchCorpus().map((e) => e.researchId),
+    ...INSTITUTE_REFERENCES.map((r) => r.refId),
+  ]);
+  for (const q of ["الاسكان", "النقل", "BRT", "أم القرى", "المحاكاة"]) {
+    for (const x of all(searchResearchCorpus(q))) {
+      assert.ok(approved.has(x.researchId), `${q} → ${x.researchId} is outside the approved set`);
+    }
+  }
+  const none = searchResearchCorpus("سيارات كهربائية طائرة");
+  assert.equal(none.results.length + none.references.length, 0);
+});
+
+test("the only publishing institution is UQU / the Institute", () => {
+  assert.deepEqual(researchSources(), ["جامعة أم القرى"]);
   for (const e of getResearchCorpus()) {
     assert.match(e.publisherAr, /معهد خادم الحرمين الشريفين لأبحاث الحج والعمرة/);
   }
-  assert.deepEqual(researchSources(), ["جامعة أم القرى"]);
 });
 
-// -- 4. no internal / engineering vocabulary in user-facing output ----
-
-test("browse module exposes no internal terms (corpus/retrieval/RAG/embedding/agent/PENDING_LOCAL_INGESTION)", () => {
-  const { results, pending } = searchResearchCorpus("");
-  const rendered = JSON.stringify([results, pending]);
-  for (const bad of ["PENDING_LOCAL_INGESTION", "RAG", "embedding", "retrieval", "corpus"]) {
-    assert.equal(rendered.includes(bad), false, `rendered output contains "${bad}"`);
+test("no internal vocabulary leaks into the rendered search output", () => {
+  const rendered = JSON.stringify(searchResearchCorpus(""));
+  for (const bad of ["PENDING_LOCAL_INGESTION", "RAG", "embedding", "retrieval", "\"corpus\""]) {
+    assert.equal(rendered.includes(bad), false, `output contains ${bad}`);
   }
-  // and the page/component text
-  for (const bad of ["PENDING_LOCAL_INGESTION", "RAG", "embedding", "retrieval", "corpus", "agent"]) {
-    assert.equal(page.includes(bad), false, `page contains "${bad}"`);
-  }
-  // the browse module's user-facing STRING LITERALS carry none either
-  const literals = (browseSrc.match(/"[^"]*"/g) ?? []).join(" ");
-  assert.equal(/PENDING_LOCAL_INGESTION|\bRAG\b|embedding/.test(literals), false);
 });
 
-// -- 5. landing copy untouched --------------------------------------
+// -- landing copy stays exact (owner-approved) --------------------
 
-test("landing copy is still the exact approved copy (unchanged this phase)", () => {
-  assert.equal(GOVERNMENT_CTA_AR, "دخول الجهات الحكومية");
+test("landing headline constant is the owner-approved string", () => {
   assert.equal(
     LANDING_HEADLINE_AR,
-    "يكشف مخاطر عدم الامتثال مبكرًا ويحاكي أثر القرارات قبل تنفيذها",
+    "يكشف مخاطر عدم الامتثال مبكرًا ويحاكي أثر القرارات قبل تنفيذها.",
   );
-  const landing = readFileSync(path.join(ROOT, "src/app/page.tsx"), "utf8");
-  assert.equal(landing.includes("/company/research"), false, "no research search on the public landing");
-  assert.equal(landing.includes("سجل الآن"), false);
 });

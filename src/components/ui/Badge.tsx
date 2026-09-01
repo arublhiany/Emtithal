@@ -117,7 +117,7 @@ export function NeedsHumanReviewBadge({ size }: { size?: "sm" | "md" }) {
 export function DemoConfigBadge({ size = "sm" }: { size?: "sm" | "md" }) {
   return (
     <BaseBadge fg="var(--color-accent-dark)" bg="var(--color-accent-tint)" size={size}>
-      تكوين تجريبي — غير معتمد رسميًا
+      بيانات عرض
     </BaseBadge>
   );
 }

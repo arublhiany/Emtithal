@@ -13,7 +13,7 @@ import { useDemoStore } from "@/lib/store/demoStore";
 import { useCompanyCompliance } from "@/lib/hooks/useCompanyCompliance";
 import { DEMO_COMPANY_PROFILE } from "@/lib/data/demo/companyProfile";
 import { PageHead, Panel, SectionTitle, Chip } from "@/components/ui/kit";
-import { ConfidenceBadge, DemoConfigBadge } from "@/components/ui/Badge";
+import { ConfidenceBadge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/viz";
 import { DisputeReportButton } from "@/components/disputes/DisputeReportButton";
 import {
@@ -266,9 +266,6 @@ export default function RequirementDetailPage({
             <p className="mt-2 text-[11px] leading-relaxed text-[var(--color-ink-faint)]">
               {OFFICIAL_WEIGHT_NOTE_AR}
             </p>
-            <div className="mt-3">
-              <DemoConfigBadge />
-            </div>
           </Panel>
 
           <Panel>

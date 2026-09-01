@@ -64,7 +64,7 @@ export default function MinistryAlertsPage() {
       </div>
 
       <div>
-        <SectionTitle hint={`${alerts.length} تنبيه`}>تنبيهات تشغيلية (نموذج تجريبي)</SectionTitle>
+        <SectionTitle hint={`${alerts.length} تنبيه`}>تنبيهات تشغيلية</SectionTitle>
         {alerts.length === 0 ? (
           <EmptyState title="لا توجد تنبيهات تشغيلية" />
         ) : (

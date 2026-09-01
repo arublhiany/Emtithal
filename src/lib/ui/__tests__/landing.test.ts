@@ -10,10 +10,12 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import {
-  AI_DISCLAIMER_AR,
+  AI_INTELLIGENCE_LINE_AR,
   COMPANY_ENTRY_ROLE,
   COMPANY_ENTRY_ROLE_LABEL_AR,
   GOVERNMENT_CTA_AR,
+  LANDING_HEADLINE_AR,
+  LANDING_SUPPORTING_AR,
   LOGO_ASSET_PATH,
 } from "@/lib/ui/landing";
 import { COMPANY_ROLE_LABEL } from "@/lib/labels";
@@ -54,13 +56,25 @@ test("the landing has NO self-registration link / affordance", () => {
   assert.equal(/href=["'][^"']*(register|signup|sign-up)/i.test(code), false);
 });
 
-// -- AI disclaimer pill present -----------------------------------
+// -- owner-approved landing copy (byte-exact) --------------------
 
-test("the approved AI-disclaimer pill is present and concise", () => {
-  assert.ok(AI_DISCLAIMER_AR.length > 0 && AI_DISCLAIMER_AR.length <= 140);
-  assert.match(AI_DISCLAIMER_AR, /الذكاء الاصطناعي/);
-  assert.match(AI_DISCLAIMER_AR, /السلطة التنظيمية/);
-  assert.ok(landingSrc.includes("AI_DISCLAIMER_AR"));
+test("the three landing copy strings are byte-exact to the owner-approved copy", () => {
+  assert.equal(
+    LANDING_HEADLINE_AR,
+    "يكشف مخاطر عدم الامتثال مبكرًا ويحاكي أثر القرارات قبل تنفيذها.",
+  );
+  assert.equal(
+    LANDING_SUPPORTING_AR,
+    "منصة ذكاء تنظيمي تجمع اشتراطات الجهات الحكومية ذات العلاقة بالحج والعمرة، وتربطها بأدلة وبيانات الشركات، لتكشف فجوات الامتثال، وتتوقع أثر السيناريوهات التشغيلية، وتقترح البدائل الأقل خطورة قبل اتخاذ القرار.",
+  );
+  assert.equal(
+    AI_INTELLIGENCE_LINE_AR,
+    "عبر ذكاء اصطناعي يحلل المخاطر ويحاكي أثر القرارات قبل تنفيذها",
+  );
+  // the page renders the small intelligence line; the old long disclaimer is gone
+  assert.ok(landingSrc.includes("AI_INTELLIGENCE_LINE_AR"));
+  assert.equal(landingSrc.includes("AI_DISCLAIMER_AR"), false);
+  assert.equal(landingSrc.includes("لا تحل محل السلطة التنظيمية"), false);
 });
 
 // -- canonical logo asset --------------------------------------

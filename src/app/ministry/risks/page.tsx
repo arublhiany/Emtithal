@@ -26,7 +26,7 @@ export default function MinistryRisksPage() {
     <div className="space-y-6">
       <PageHead
         eyebrow="الجهات الحكومية"
-        title="أولويات المتابعة الرقابية (تجريبي)"
+        title="أولويات المتابعة الرقابية"
         subtitle="ترتيب الشركات حسب العوائق الحرجة، ثم البنود بانتظار التحقق، ثم الجاهزية. لا تُحتسب درجة مخاطر رسمية."
       />
 

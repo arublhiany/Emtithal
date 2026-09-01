@@ -1,7 +1,7 @@
 "use client";
 
 import { useCompanyCompliance } from "@/lib/hooks/useCompanyCompliance";
-import { PageHead, Panel, Chip, SectionTitle } from "@/components/ui/kit";
+import { PageHead, Panel, SectionTitle } from "@/components/ui/kit";
 import { Donut } from "@/components/ui/viz";
 import { CanonicalRequirementCard } from "@/components/requirements/CanonicalRequirementCard";
 import { READINESS_INDEX_AR, VERIFICATION_COVERAGE_AR, show } from "@/lib/ui/status";
@@ -25,12 +25,7 @@ export default function CompliancePage() {
       <PageHead
         eyebrow="الامتثال"
         title="المتطلبات التنظيمية المعتمدة"
-        subtitle={`${total} متطلبًا عبر ثلاث جهات تنظيمية، على ملف الشركة التجريبي. لا توجد درجة إجمالية رسمية.`}
-        actions={
-          <Chip tone="amber" dot={false}>
-            تكوين تجريبي — غير معتمد رسميًا
-          </Chip>
-        }
+        subtitle={`${total} متطلبًا عبر ثلاث جهات تنظيمية على ملف الشركة. لا توجد درجة إجمالية رسمية.`}
       />
 
       <Panel className="flex flex-wrap items-center gap-6">

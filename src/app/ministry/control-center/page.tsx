@@ -26,7 +26,7 @@ export default function MinistryControlCenterPage() {
       <PageHead
         eyebrow="الجهات الحكومية"
         title="مركز التحكم الرقابي"
-        subtitle="متابعة جاهزية الشركات وإدارة دورة حياة المتطلبات، على بيانات تجريبية."
+        subtitle="متابعة جاهزية الشركات وإدارة دورة حياة المتطلبات التنظيمية."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -75,7 +75,7 @@ export default function MinistryControlCenterPage() {
             </Link>
           }
         >
-          نظرة عامة على الشركات (تجريبي)
+          نظرة عامة على الشركات
         </SectionTitle>
         <CompanyTable rows={portfolio.rows} />
       </div>

@@ -29,8 +29,8 @@ export function Sidebar({
     portal === "company"
       ? state.companyRole
         ? COMPANY_ROLE_LABEL[state.companyRole]
-        : "بيئة تجريبية"
-      : "مركز التحكم الرقابي — بيئة تجريبية";
+        : "ممثل الشركة"
+      : "مركز التحكم الرقابي";
 
   const shell =
     variant === "drawer"

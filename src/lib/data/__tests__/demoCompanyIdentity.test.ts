@@ -109,10 +109,15 @@ test("the government portfolio holds exactly one row for the canonical primary c
   const primary = rows.filter((r) => r.profile.companyId === CANONICAL_DEMO_COMPANY_ID);
   assert.equal(primary.length, 1);
   assert.equal(primary[0].nameAr, DEMO_COMPANY_PROFILE.legalNameAr);
-  // the other rows are clearly-labelled synthetic variants, none reusing the id
-  for (const r of rows.filter((x) => x.profile.companyId !== CANONICAL_DEMO_COMPANY_ID)) {
-    assert.match(r.nameAr, /تجريبي/);
+  // the other rows are synthetic variants — distinct names, distinct ids, and
+  // each uses its own `demo-gov-var-*` id (never the canonical primary id)
+  const variants = rows.filter((x) => x.profile.companyId !== CANONICAL_DEMO_COMPANY_ID);
+  assert.ok(variants.length >= 1);
+  for (const r of variants) {
+    assert.match(r.profile.companyId, /^demo-gov-var-\d+$/);
+    assert.notEqual(r.nameAr, primary[0].nameAr);
   }
+  assert.equal(new Set(rows.map((r) => r.profile.companyId)).size, rows.length);
 });
 
 // -- 4. no active (non-test) code path uses the retired identity -------

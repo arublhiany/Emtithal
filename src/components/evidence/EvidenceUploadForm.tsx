@@ -53,13 +53,13 @@ export function EvidenceUploadForm() {
         status: "needs_review",
         validationStatus: "pending_verification",
         analysis: {
-          summaryAr: `تم استلام الملف وربطه بمتطلب ${requirementId} — ${reqTitleAr}. هذا تحليل أولي تجريبي داخل المتصفح فقط (لا يوجد تخزين أو معالجة فعلية على خادم)، وبانتظار المراجعة البشرية لاعتماد المحتوى رسميًا.`,
+          summaryAr: `تم استلام الملف وربطه بمتطلب ${requirementId} — ${reqTitleAr}. معالجة أولية داخل المتصفح فقط، وبانتظار المراجعة البشرية لاعتماد المحتوى.`,
           extractedFields: [],
           matchedRequirementIds: [requirementId],
           missingAr: [],
           confidence: "low",
           confidenceReasonAr:
-            "هذا رفع تجريبي داخل الجلسة الحالية فقط — لا تتوفر معالجة مستندات فعلية في هذا العرض التجريبي.",
+            "رفع داخل الجلسة الحالية فقط؛ لا تتوفر معالجة مستندات فعلية.",
         },
         isDemoUpload: true,
       };
@@ -77,8 +77,7 @@ export function EvidenceUploadForm() {
       <div>
         <h3 className="text-sm font-semibold text-[var(--color-ink)]">رفع دليل جديد</h3>
         <p className="text-xs text-[var(--color-ink-muted)] mt-1 leading-relaxed">
-          يتم حفظ الملف داخل هذه الجلسة فقط في متصفحك (بدون تخزين على خادم) — عرض تجريبي وظيفي
-          وليس تخزينًا إنتاجيًا فعليًا.
+          يُحفظ الملف داخل هذه الجلسة في المتصفح فقط، دون تخزين على خادم.
         </p>
       </div>
 

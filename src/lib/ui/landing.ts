@@ -2,8 +2,8 @@
 // Landing page — locked content constants (Phase 10). Pure, testable.
 //
 // The approved landing is intentionally minimal. Self-registration is NOT
-// approved and must not appear or be implied. The AI-disclaimer pill IS
-// approved — kept concise and visually subtle.
+// approved and must not appear or be implied. All three copy strings below are
+// OWNER-APPROVED EXACT text — do not paraphrase.
 // =============================================================================
 
 import type { CompanyRole } from "@/lib/types";
@@ -18,15 +18,15 @@ export const COMPANY_CTA_AR = "دخول الشركات";
 export const COMPANY_ENTRY_ROLE: CompanyRole = "company_representative";
 export const COMPANY_ENTRY_ROLE_LABEL_AR = "ممثل الشركة";
 
-/** Approved concise AI trust-boundary line. */
-export const AI_DISCLAIMER_AR =
-  "تحليلات الذكاء الاصطناعي مساندة للقرار وقابلة للمراجعة البشرية — لا تحل محل السلطة التنظيمية.";
+/** Owner-approved exact small intelligence line (shown as the subtle chip). */
+export const AI_INTELLIGENCE_LINE_AR =
+  "عبر ذكاء اصطناعي يحلل المخاطر ويحاكي أثر القرارات قبل تنفيذها";
 
 export const LANDING_HEADLINE_AR =
-  "يكشف مخاطر عدم الامتثال مبكرًا ويحاكي أثر القرارات قبل تنفيذها";
+  "يكشف مخاطر عدم الامتثال مبكرًا ويحاكي أثر القرارات قبل تنفيذها.";
 
 export const LANDING_SUPPORTING_AR =
-  "منصة تربط اشتراطات الجهات الحكومية بأدلة وبيانات كل شركة، لقياس الجاهزية وكشف الفجوات قبل التفتيش.";
+  "منصة ذكاء تنظيمي تجمع اشتراطات الجهات الحكومية ذات العلاقة بالحج والعمرة، وتربطها بأدلة وبيانات الشركات، لتكشف فجوات الامتثال، وتتوقع أثر السيناريوهات التشغيلية، وتقترح البدائل الأقل خطورة قبل اتخاذ القرار.";
 
 export const LANDING_FOOTER_AR = "امتثال © 1447هـ";
 
