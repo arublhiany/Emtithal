@@ -57,7 +57,14 @@ export function DecisionForm({
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    onSimulate({ titleAr, category, descriptionAr, magnitudePercent, affectedAreaAr });
+    onSimulate({
+      titleAr,
+      category,
+      descriptionAr,
+      magnitudePercent,
+      affectedAreaAr,
+      isCustom: presetId === "custom",
+    });
   }
 
   return (

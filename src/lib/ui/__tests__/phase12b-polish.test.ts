@@ -258,6 +258,36 @@ test("decision-engine impact sentences reference the requirement NAME, never a b
   assert.match(src, /أثر القرار على متطلب «\$\{req\.nameAr\}»/);
 });
 
+// -- 15. custom decision safe fallback: neutral state, no fake recommendation --
+
+test("DecisionResult renders the neutral 'no material impact' state and hides the recommendation", () => {
+  const src = read("src/components/decision/DecisionResult.tsx");
+  // the neutral branch short-circuits before any recommendation UI
+  assert.match(src, /if \(result\.noMaterialImpact\)/);
+  assert.ok(
+    src.indexOf("if (result.noMaterialImpact)") < src.indexOf("الخيار الموصى به"),
+    "the noMaterialImpact early-return must come before the recommended-option block",
+  );
+  assert.match(src, /NO_MATERIAL_IMPACT_TITLE_AR/);
+  assert.match(src, /NO_MATERIAL_IMPACT_BODY_AR/);
+  // it explicitly disambiguates "not determined" from "no effect"
+  assert.match(src, /هذا لا يعني عدم وجود أثر، بل أن البيانات الحالية لا تكفي لتحديده\./);
+});
+
+test("the neutral-state copy constants are the approved strings", () => {
+  const eng = read("src/lib/engine/decisionEngine.ts");
+  assert.match(eng, /NO_MATERIAL_IMPACT_TITLE_AR = "لم يتم تحديد أثر تنظيمي واضح"/);
+  assert.match(
+    eng,
+    /NO_MATERIAL_IMPACT_BODY_AR =\s*\n?\s*"لم يرتبط القرار الحالي بمتطلبات متأثرة بشكل كافٍ بناءً على البيانات المتاحة\. حدّد نطاق القرار التشغيلي للحصول على تحليل أدق\."/,
+  );
+});
+
+test("DecisionForm flags a free-text decision as custom", () => {
+  const src = read("src/components/decision/DecisionForm.tsx");
+  assert.match(src, /isCustom:\s*presetId === "custom"/);
+});
+
 test("a real simulation's explanations name the requirement and use natural point phrasing, not a code", async () => {
   const { simulateDecision } = await import("@/lib/engine/decisionEngine");
   const { getRequirements } = await import("@/lib/data/requirements");

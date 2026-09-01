@@ -1,5 +1,9 @@
 import type { DecisionSimulationResult } from "@/lib/types";
 import { displayRequirementId } from "@/lib/data/regulatory";
+import {
+  NO_MATERIAL_IMPACT_TITLE_AR,
+  NO_MATERIAL_IMPACT_BODY_AR,
+} from "@/lib/engine/decisionEngine";
 import { Card, SectionHeader } from "@/components/ui/Card";
 import { RiskBadge, ConfidenceBadge, SimulatedBadge } from "@/components/ui/Badge";
 import { CompareBar } from "@/components/ui/ScoreRing";
@@ -8,6 +12,43 @@ import { DisputeReportButton } from "@/components/disputes/DisputeReportButton";
 
 export function DecisionResult({ result }: { result: DecisionSimulationResult }) {
   const recommended = result.alternatives.find((a) => a.id === result.recommendedAlternativeId);
+
+  // Custom decision with no materially affected requirement → neutral state only.
+  // No recommended option, no alternative ranking, no preventive actions.
+  if (result.noMaterialImpact) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <p className="text-xs text-[var(--color-ink-muted)]">نتائج المحاكاة</p>
+            <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+              {result.decision.titleAr}
+            </h2>
+          </div>
+          <SimulatedBadge />
+        </div>
+
+        <Card>
+          <SectionHeader title={NO_MATERIAL_IMPACT_TITLE_AR} />
+          <p className="text-sm text-[var(--color-ink-muted)] leading-relaxed">
+            {NO_MATERIAL_IMPACT_BODY_AR}
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-[var(--color-ink-muted)]">
+            <span>
+              الأثر المحسوب على المؤشر:{" "}
+              <span className="tabular-nums font-semibold text-[var(--color-ink)]">0</span>
+            </span>
+            <span>الحالة: لم يتم تحديد أثر</span>
+          </div>
+          <p className="mt-3 text-[11px] text-[var(--color-ink-faint)]">
+            هذا لا يعني عدم وجود أثر، بل أن البيانات الحالية لا تكفي لتحديده.
+          </p>
+        </Card>
+
+        <DisputeReportButton aiResultRefAr={`محاكاة القرار ${result.id}`} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

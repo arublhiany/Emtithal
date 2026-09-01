@@ -281,6 +281,15 @@ export interface DecisionInput {
   descriptionAr: string;
   magnitudePercent: number; // e.g. -20 for a 20% staffing reduction, +15 for an increase
   affectedAreaAr: string; // e.g. service point / process name
+  /**
+   * True when the operator wrote a free-text decision instead of picking a preset.
+   * A custom decision that the deterministic layer cannot link to any materially
+   * affected requirement gets a neutral "impact not determined" result — no
+   * recommended alternative, no ranking, no preventive actions — rather than a
+   * recommendation derived from unrelated existing gaps (see decisionEngine.ts).
+   * Preset decisions never take that path; their behaviour is unchanged.
+   */
+  isCustom?: boolean;
 }
 
 export type DecisionImpactDirection = "positive" | "negative" | "uncertain";
@@ -331,11 +340,19 @@ export interface DecisionSimulationResult {
   negativeImpactsAr: string[];
   regulatoryGapsAr: string[];
   alternatives: DecisionAlternative[];
+  /** Empty string when `noMaterialImpact` is true (no alternative is recommended). */
   recommendedAlternativeId: string;
   preventiveActionsAr: string[];
   explanationAr: string;
   confidence: ConfidenceLevel;
   confidenceReasonAr: string;
+  /**
+   * True when a custom decision could not be linked to any materially affected
+   * requirement (no confirmed positive or negative effect). The UI then shows a
+   * neutral "لم يتم تحديد أثر تنظيمي واضح" state and hides the recommended option,
+   * the alternative ranking and the preventive actions. Always false for presets.
+   */
+  noMaterialImpact: boolean;
   isSimulatedDemo: true; // always true in MVP — never an official Ministry determination
 }
 

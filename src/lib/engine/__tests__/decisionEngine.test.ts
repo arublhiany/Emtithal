@@ -246,3 +246,95 @@ test("simulateDecision: falls back the same way if the agent returns a malformed
   assert.equal(result.affectedRequirements.length, 0);
   assert.equal(result.predictedOverallScore, result.currentOverallScore);
 });
+
+// -----------------------------------------------------------------------------
+// Custom decision safe fallback — no fabricated recommendation when a free-text
+// decision has no materially affected requirement (regression: "تنفيذ مبادرة
+// دعم نفسي" produced 0 impact but still recommended "تأجيل القرار").
+// -----------------------------------------------------------------------------
+
+const UNLINKED_CUSTOM_INPUT: DecisionInput = {
+  titleAr: "تنفيذ مبادرة دعم نفسي",
+  category: "staffing_change",
+  descriptionAr: "",
+  magnitudePercent: 0,
+  affectedAreaAr: "",
+  isCustom: true,
+};
+
+test("custom decision with no material linkage returns a neutral state, not a recommendation", () => {
+  const r = simulateDecision(UNLINKED_CUSTOM_INPUT, getRequirements());
+
+  assert.equal(r.noMaterialImpact, true);
+  assert.equal(r.recommendedAlternativeId, "");
+  assert.deepEqual(r.alternatives, []);
+  assert.deepEqual(r.preventiveActionsAr, []);
+  assert.deepEqual(r.positiveImpactsAr, []);
+  assert.deepEqual(r.negativeImpactsAr, []);
+  assert.deepEqual(r.regulatoryGapsAr, []);
+  assert.equal(r.riskLevel, "none");
+  // deterministic calculations are untouched — zero movement, not a silent guess
+  assert.equal(r.predictedOverallScore, r.currentOverallScore);
+});
+
+test("zero mapped impact is phrased as 'لم يتم تحديد أثر', never 'لا يوجد أثر'", () => {
+  const r = simulateDecision(UNLINKED_CUSTOM_INPUT, getRequirements());
+  assert.match(r.explanationAr, /لم يرتبط القرار الحالي بمتطلبات متأثرة بشكل كافٍ/);
+  assert.equal(r.explanationAr.includes("لا يوجد أثر"), false);
+  assert.equal(r.confidenceReasonAr.includes("لا يوجد أثر"), false);
+});
+
+test("unrelated existing company gaps cannot produce a generic 'defer the decision' recommendation", () => {
+  const r = simulateDecision(UNLINKED_CUSTOM_INPUT, getRequirements());
+  // no alternative at all — in particular not the "تأجيل القرار" (defer) option
+  assert.equal(
+    r.alternatives.some((a) => a.id === "defer" || /تأجيل/.test(a.labelAr)),
+    false,
+  );
+  assert.notEqual(r.recommendedAlternativeId, "defer");
+});
+
+test("a custom decision that DOES map materially still gets a normal recommendation", () => {
+  const r = simulateDecision(
+    {
+      titleAr: "زيادة عدد الحافلات المكوكية خلال أوقات الذروة",
+      category: "service_change",
+      descriptionAr:
+        "زيادة عدد الحافلات المكوكية لتقليل وقت الانتظار وتحسين تدفق الحركة وتخفيف الازدحام.",
+      magnitudePercent: 15,
+      affectedAreaAr: "نقاط انتظار الحافلات",
+      isCustom: true,
+    },
+    getRequirements(),
+  );
+  assert.equal(r.noMaterialImpact, false);
+  assert.ok(r.alternatives.length > 0);
+  assert.equal(r.alternatives.filter((a) => a.isRecommended).length, 1);
+  assert.ok(r.recommendedAlternativeId.length > 0);
+});
+
+test("preset scenarios are unchanged: mapped impacts still yield a recommendation and calculations", () => {
+  const presetLike: DecisionInput = {
+    titleAr: "زيادة عدد الحافلات المكوكية خلال أوقات الذروة",
+    category: "service_change",
+    descriptionAr:
+      "زيادة عدد الحافلات المكوكية لتقليل وقت الانتظار وتحسين تدفق الحركة.",
+    magnitudePercent: 15,
+    affectedAreaAr: "نقاط انتظار الحافلات",
+  };
+  for (const input of [presetLike, { ...presetLike, isCustom: false }]) {
+    const r = simulateDecision(input, getRequirements());
+    assert.equal(r.noMaterialImpact, false);
+    assert.equal(r.alternatives.filter((a) => a.isRecommended).length, 1);
+    assert.ok(r.affectedRequirements.some((i) => i.includedInScore && i.delta !== 0));
+  }
+
+  // the safe fallback is scoped to custom decisions only: a NON-custom decision
+  // with no material linkage keeps the legacy behaviour (still recommends).
+  const flatNonCustom = simulateDecision(
+    { ...UNLINKED_CUSTOM_INPUT, isCustom: false },
+    getRequirements(),
+  );
+  assert.equal(flatNonCustom.noMaterialImpact, false);
+  assert.ok(flatNonCustom.alternatives.length > 0);
+});

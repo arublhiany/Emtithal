@@ -42,6 +42,14 @@ import type {
 import { computeOverallScore } from "@/lib/engine/scoringEngine";
 import { interpretDecision, type DecisionAgentMapping } from "@/lib/agent/decisionAgent";
 
+// Neutral "safe fallback" copy for a custom/free-text decision the deterministic
+// layer cannot link to any materially affected requirement. Shown INSTEAD of a
+// recommendation so the tool never implies a decision is safe / unsafe / better /
+// worse / should be delayed on the strength of unrelated existing gaps.
+export const NO_MATERIAL_IMPACT_TITLE_AR = "لم يتم تحديد أثر تنظيمي واضح";
+export const NO_MATERIAL_IMPACT_BODY_AR =
+  "لم يرتبط القرار الحالي بمتطلبات متأثرة بشكل كافٍ بناءً على البيانات المتاحة. حدّد نطاق القرار التشغيلي للحصول على تحليل أدق.";
+
 /** "بمقدار …" points phrase in natural Arabic (1 → نقطة واحدة, 2 → نقطتين, 3–10 → N نقاط, else → N نقطة). */
 function pointsPhraseAr(n: number): string {
   const a = Math.abs(n);
@@ -330,6 +338,38 @@ export function simulateDecision(
 
   const affectedRequirements = buildRequirementImpacts(input, requirements, 1, interpret);
   const countedImpacts = affectedRequirements.filter((i) => i.includedInScore);
+
+  // "Materially affected" = a counted requirement whose deterministic projection
+  // actually moves (a confirmed positive or negative effect). A counted-but-flat
+  // link (delta 0, "uncertain") is NOT a material linkage.
+  const hasMaterialLinkage = countedImpacts.some((i) => i.delta !== 0);
+
+  // CUSTOM DECISION SAFE FALLBACK — a free-text decision with no material
+  // linkage gets a neutral state, never a recommendation. Preset decisions
+  // (isCustom !== true) always keep their existing behaviour.
+  if (input.isCustom && !hasMaterialLinkage) {
+    return {
+      id: `DS-${Date.now()}`,
+      createdAtLabel: "الآن",
+      decision: input,
+      affectedRequirements,
+      currentOverallScore,
+      predictedOverallScore: currentOverallScore,
+      riskLevel: "none",
+      positiveImpactsAr: [],
+      negativeImpactsAr: [],
+      regulatoryGapsAr: [],
+      alternatives: [],
+      recommendedAlternativeId: "",
+      preventiveActionsAr: [],
+      explanationAr: NO_MATERIAL_IMPACT_BODY_AR,
+      confidence: "low",
+      confidenceReasonAr: NO_MATERIAL_IMPACT_BODY_AR,
+      noMaterialImpact: true,
+      isSimulatedDemo: true,
+    };
+  }
+
   const predictedOverallScore = overallFromImpacts(requirements, affectedRequirements);
   const alternatives = buildAlternatives(input, requirements, currentOverallScore, interpret);
   const recommended = alternatives.find((a) => a.isRecommended)!;
@@ -397,6 +437,7 @@ export function simulateDecision(
     explanationAr,
     confidence,
     confidenceReasonAr,
+    noMaterialImpact: false,
     isSimulatedDemo: true,
   };
 }
