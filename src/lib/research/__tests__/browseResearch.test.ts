@@ -37,7 +37,7 @@ test("company navigation still exposes the research capability", () => {
 test("the page states clearly that it searches the Institute's research", () => {
   assert.ok(statSync(path.join(ROOT, "src/app/company/research/page.tsx")).isFile());
   assert.match(page, /title="البحث في الأبحاث الرسمية للمعهد"/);
-  assert.match(page, /subtitle="ابحث في المصادر الرسمية المتاحة داخل امتثال لدعم القرار\."/);
+  assert.match(page, /subtitle="ابحث في المصادر الرسمية المتاحة داخل سبّاق لدعم القرار\."/);
   assert.match(page, /ابحث في أبحاث المعهد/);
   assert.match(page, /يشمل البحث المصادر الرسمية المضافة حاليًا إلى المنصة\./);
   assert.match(page, /placeholder="مثال: الإسكان، النقل، إدارة الحشود، المحاكاة"/);
