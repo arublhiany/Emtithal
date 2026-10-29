@@ -70,9 +70,9 @@ test("the report never includes a computed Official Score", () => {
   assert.equal(/official\s*score/i.test(html), false);
   assert.equal(/الدرجة الرسمية/.test(csv), false);
   // the canonical Arabic terms ARE used
-  assert.match(csv, /مؤشر جاهزية امتثال/);
+  assert.match(csv, /مؤشر جاهزية سبّاق/);
   assert.match(csv, /نسبة التحقق/);
-  assert.match(html, /مؤشر جاهزية امتثال/);
+  assert.match(html, /مؤشر جاهزية سبّاق/);
 });
 
 test("null readiness is exported as '—', never a fabricated zero", () => {
@@ -80,15 +80,15 @@ test("null readiness is exported as '—', never a fabricated zero", () => {
   const csv = toReportCsv(r);
   const html = toReportHtml(r);
   // the readiness-index KPI is null → shows '—'
-  assert.match(csv, /مؤشر جاهزية امتثال,—/);
-  assert.match(html, /<b>—<\/b><span>مؤشر جاهزية امتثال<\/span>/);
+  assert.match(csv, /مؤشر جاهزية سبّاق,—/);
+  assert.match(html, /<b>—<\/b><span>مؤشر جاهزية سبّاق<\/span>/);
   // the not-assessable requirement row shows '—' for its readiness, the other shows 62
   const line = csv.split("\r\n").find((l) => l.startsWith("HAJ-EXP-05"))!;
   assert.match(line, /,—,/);
   const line2 = csv.split("\r\n").find((l) => l.startsWith("HAJ-EXP-01"))!;
   assert.match(line2, /,62,/);
   // no accidental ",0," injected for missing values
-  assert.equal(csv.includes("مؤشر جاهزية امتثال,0"), false);
+  assert.equal(csv.includes("مؤشر جاهزية سبّاق,0"), false);
 });
 
 test("the report echoes only supplied canonical values — nothing fabricated", () => {
