@@ -16,7 +16,6 @@ import {
   GOVERNMENT_CTA_AR,
   LANDING_HEADLINE_AR,
   LANDING_SUPPORTING_AR,
-  LOGO_ASSET_PATH,
 } from "@/lib/ui/landing";
 import { COMPANY_ROLE_LABEL } from "@/lib/labels";
 import { COMPANY_REPRESENTATIVE_ROLE } from "@/lib/types";
@@ -79,11 +78,11 @@ test("the three landing copy strings are byte-exact to the owner-approved copy",
 
 // -- canonical logo asset --------------------------------------
 
-test("the landing uses the canonical <Logo> asset, not a text/emoji recreation", () => {
-  assert.equal(LOGO_ASSET_PATH, "/emtithal-logo.png");
+test("the landing uses the current product wordmark", () => {
   assert.ok(landingSrc.includes("<Logo"));
-  assert.ok(logoSrc.includes("LOGO_ASSET_PATH"));
-  assert.ok(logoSrc.includes("next/image"));
+  assert.ok(logoSrc.includes("BRAND_NAME_AR"));
+  assert.ok(logoSrc.includes("BRAND_NAME_EN"));
+  assert.equal(logoSrc.includes("emtithal-logo.png"), false);
   // the old placeholder logo (a green box with the letters "ام") is gone
   assert.equal(landingSrc.includes('>ام<'), false);
   assert.equal(landingSrc.includes("rounded-xl bg-[var(--color-primary)] text-[var(--color-accent-tint)]"), false);

@@ -128,7 +128,7 @@ test("the decision engine's user-facing strings carry no legacy CR-00x id", () =
 
 test("the decision result screen uses the canonical readiness term", () => {
   const dr = readFileSync(path.join(ROOT, "src/components/decision/DecisionResult.tsx"), "utf8");
-  assert.match(dr, /مؤشر جاهزية امتثال/);
+  assert.match(dr, /مؤشر جاهزية سبّاق/);
   assert.match(dr, /أثر القرار على الجاهزية/);
   assert.equal(dr.includes("مقارنة الامتثال قبل وبعد القرار"), false);
 });
@@ -150,7 +150,7 @@ test("landing copy constants are unchanged (approved Figma copy, locked)", () =>
     AI_INTELLIGENCE_LINE_AR,
     "عبر ذكاء اصطناعي يحلل المخاطر ويحاكي أثر القرارات قبل تنفيذها",
   );
-  assert.equal(LANDING_FOOTER_AR, "امتثال © 1447هـ");
+  assert.equal(LANDING_FOOTER_AR, "سبّاق © 1447هـ");
 
   // the landing page renders those constants and adds no extra hard-coded copy
   const page = readFileSync(path.join(ROOT, "src/app/page.tsx"), "utf8");
