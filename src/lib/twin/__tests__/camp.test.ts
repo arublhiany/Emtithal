@@ -71,3 +71,13 @@ test("the independent company projection keeps official scoring boundaries and o
  assert.equal(projected.mutations[0].scenarioValue,4210);assert.equal(projected.mutations[0].source,"SCENARIO_ASSUMPTION");
  assert.equal(JSON.stringify(DEMO_COMPANY_PROFILE),before);
 });
+
+ test("scenario comparison retains its original baseline after new observations", () => {
+  const base = createCamp(100);
+  const scenario = simulateCamp(base,{kind:"ADD",from:"a",to:"c",count:200});
+  const updated = applyEvent(base,{id:"later",zoneId:"a",field:"occupancy",value:370,observedAt:200,source:"MANUAL_DEMO"},200);
+  assert.equal(summarize(updated.zones).occupancy,980);
+  assert.equal(summarize(scenario.baselineZones).occupancy,970);
+  assert.equal(summarize(scenario.zones).occupancy,1170);
+  assert.notEqual(scenario.baselineZones[0],base.zones[0]);
+ });
