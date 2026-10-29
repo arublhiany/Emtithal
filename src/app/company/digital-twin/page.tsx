@@ -74,6 +74,7 @@ export default function DigitalTwinPage() {
   const totals = summarize(camp.zones);
   const zone = camp.zones.find(z=>z.id===selected)!;
   const proposedTotals = proposal ? summarize(proposal.zones) : null;
+  const baselineTotals = proposal ? summarize(proposal.baselineZones) : null;
   const stale = camp.zones.filter(z=>now-z.updatedAt > STALE_AFTER_MS);
   const changed = !!proposal && proposal.revision !== camp.revision;
   function submitEvent(e: React.FormEvent) {
@@ -138,11 +139,11 @@ export default function DigitalTwinPage() {
         <label className="text-sm">إلى المنطقة<select className={inputClass} value={to} onChange={e=>setTo(e.target.value as ZoneId)}>{options}</select></label>
         <label className="text-sm">عدد الحجاج<input className={inputClass} type="number" min="1" max="100000" step="1" value={amount} onChange={e=>setAmount(e.target.value)} required /></label><button className={buttonClass}>تشغيل المحاكاة</button>
       </form>
-      {proposal && proposedTotals && <div className="mt-5 space-y-4 border-t border-[var(--color-border)] pt-4">
+      {proposal && proposedTotals && baselineTotals && <div className="mt-5 space-y-4 border-t border-[var(--color-border)] pt-4">
         <h3 className="font-semibold">{proposal.description}</h3>
         {changed && <p role="status" className="text-sm text-amber-800">تغيرت حالة المخيم. أعد تشغيل المحاكاة قبل تطبيق الاقتراح.</p>}
         {stale.length>0 && <p className="text-sm text-amber-800">بيانات منطقة واحدة أو أكثر تجاوزت دقيقة. حدّث بياناتها قبل التطبيق.</p>}
-        <div className="overflow-x-auto"><table className="w-full text-right text-sm"><caption className="mb-2 text-right text-xs">النتيجة التشغيلية ضمن افتراضات هذه التجربة</caption><thead><tr><th className="p-2">المؤشر</th><th>قبل القرار</th><th>بعد القرار</th></tr></thead><tbody>{[["عدد الحجاج",totals.occupancy,proposedTotals.occupancy],["تجاوز السعة",totals.overCapacity,proposedTotals.overCapacity],["نقص الوجبات",totals.mealDeficit,proposedTotals.mealDeficit],["المخارج المغلقة",totals.closedExits,proposedTotals.closedExits]].map(([label,before,after])=><tr key={label} className="border-t border-[var(--color-border)]"><th className="p-2 font-normal">{label}</th><td>{number(Number(before))}</td><td>{number(Number(after))}</td></tr>)}</tbody></table></div>
+        <div className="overflow-x-auto"><table className="w-full text-right text-sm"><caption className="mb-2 text-right text-xs">النتيجة التشغيلية ضمن افتراضات هذه التجربة</caption><thead><tr><th className="p-2">المؤشر</th><th>قبل القرار</th><th>بعد القرار</th></tr></thead><tbody>{[["عدد الحجاج",baselineTotals.occupancy,proposedTotals.occupancy],["تجاوز السعة",baselineTotals.overCapacity,proposedTotals.overCapacity],["نقص الوجبات",baselineTotals.mealDeficit,proposedTotals.mealDeficit],["المخارج المغلقة",baselineTotals.closedExits,proposedTotals.closedExits]].map(([label,before,after])=><tr key={label} className="border-t border-[var(--color-border)]"><th className="p-2 font-normal">{label}</th><td>{number(Number(before))}</td><td>{number(Number(after))}</td></tr>)}</tbody></table></div>
         {proposal.zones.flatMap(z=>observations(z).map(n=><p key={z.id+n} className="text-sm text-amber-800">{z.name}: {n}</p>))}
         {projection && <p className="rounded-lg bg-[var(--color-bg)] p-3 text-xs leading-6">فحص مستقل بمحرك سبّاق الحالي: مؤشر الجاهزية {projection.kpis.readiness ?? "—"}. يفترض الربط أن تغير إشغال هذا المخيم يضاف إلى عدد الشركة الافتراضية البالغ ٤٢٠٠. يستخدم الفحص الأدلة التجريبية الحالية. تغيّر الإشغال وحده لا يثبت تغير الامتثال، ولا تدخل فحوص السعة والوجبات تلقائيًا في الدرجة التنظيمية.</p>}
         <button className={buttonClass} disabled={changed || stale.length>0 || proposal.zones.some(z=>observations(z).length>0)} onClick={()=>{setLive(false);dispatch({type:"APPLY",proposal,now:Date.now(),id:crypto.randomUUID()});}}>تطبيق الاقتراح كتحديث تجريبي</button>
