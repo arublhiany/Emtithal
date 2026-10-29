@@ -9,7 +9,7 @@
 
 /** Canonical concept key → approved Arabic label. */
 export const GLOSSARY_AR = {
-  EMTITHAL_READINESS_INDEX: "مؤشر جاهزية امتثال",
+  EMTITHAL_READINESS_INDEX: "مؤشر جاهزية سبّاق",
   VERIFICATION_COVERAGE: "نسبة التحقق",
 
   // Compliance statuses (matrix §3).
