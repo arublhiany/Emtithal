@@ -41,7 +41,7 @@ export const DATA_SOURCE_LABEL_AR = {
   PENDING_LINK: GLOSSARY_AR.DATA_SOURCE_PENDING_LINK,
 } as const;
 
-export const READINESS_INDEX_AR = GLOSSARY_AR.EMTITHAL_READINESS_INDEX; // "مؤشر جاهزية امتثال"
+export const READINESS_INDEX_AR = GLOSSARY_AR.EMTITHAL_READINESS_INDEX; // "مؤشر جاهزية سبّاق"
 export const VERIFICATION_COVERAGE_AR = GLOSSARY_AR.VERIFICATION_COVERAGE; // "نسبة التحقق"
 export const CRITICAL_BLOCKER_AR = GLOSSARY_AR.CRITICAL_BLOCKER;
 export const UNRESOLVED_REQUIREMENT_AR = GLOSSARY_AR.UNRESOLVED_REQUIREMENT;
@@ -58,7 +58,7 @@ export function formatSeasonAr(season: string | null | undefined): string {
 
 export const OFFICIAL_WEIGHT_LABEL_AR = "الوزن الرسمي المنشور";
 export const OFFICIAL_WEIGHT_NOTE_AR =
-  "بيانات تعريفية رسمية — لا تُستخدم في حساب مؤشر جاهزية امتثال.";
+  "بيانات تعريفية رسمية — لا تُستخدم في حساب مؤشر جاهزية سبّاق.";
 
 /**
  * Official published within-track weight → display text. `"20%"` for the
