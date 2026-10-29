@@ -26,7 +26,7 @@ const stateSchema = z.object({
   seenIds: z.array(z.string()).max(2000),
 });
 export type CampState = z.infer<typeof stateSchema>;
-export type Scenario = { revision: number; zones: Zone[]; description: string };
+export type Scenario = { revision: number; baselineZones: Zone[]; zones: Zone[]; description: string };
 
 export function createCamp(now: number): CampState {
   return { schemaVersion: 1, companyId: "demo-company-01", campId: "demo-camp-mina", revision: 0,
@@ -79,7 +79,7 @@ export function simulateCamp(state: CampState, input: { kind: "ADD" | "MOVE"; fr
   if (input.kind !== "ADD" && input.kind !== "MOVE") throw Error("نوع السيناريو غير مدعوم.");
   if (input.kind === "MOVE" && (input.from === input.to || state.zones.find(z=>z.id===input.from)!.occupancy < input.count)) throw Error("النقل يحتاج منطقتين مختلفتين وعددًا متاحًا في المصدر.");
   const zones = state.zones.map(z => ({ ...z, occupancy: z.occupancy + (z.id===input.to ? input.count : 0) - (input.kind==="MOVE" && z.id===input.from ? input.count : 0) }));
-  return { revision: state.revision, zones, description: input.kind === "ADD" ? `زيادة ${input.count} حاج في ${zones.find(z=>z.id===input.to)!.name}` : `نقل ${input.count} حاج من ${zones.find(z=>z.id===input.from)!.name} إلى ${zones.find(z=>z.id===input.to)!.name}` };
+  return { revision: state.revision, baselineZones: state.zones.map(z=>({...z})), zones, description: input.kind === "ADD" ? `زيادة ${input.count} حاج في ${zones.find(z=>z.id===input.to)!.name}` : `نقل ${input.count} حاج من ${zones.find(z=>z.id===input.from)!.name} إلى ${zones.find(z=>z.id===input.to)!.name}` };
 }
 export function applyScenario(state: CampState, scenario: Scenario, now: number, id: string): CampState {
   if (state.zones.some(z=>now-z.updatedAt > STALE_AFTER_MS)) throw Error("بيانات المخيم متأخرة. حدّثها قبل التطبيق.");
