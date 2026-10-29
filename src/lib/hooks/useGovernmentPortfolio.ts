@@ -19,7 +19,7 @@ import { verifyAll } from "@/lib/engine/verificationEngine";
 export interface PortfolioRow {
   companyId: string;
   nameAr: string;
-  /** "مؤشر جاهزية امتثال" — number | null (→ "—"). */
+  /** "مؤشر جاهزية سبّاق" — number | null (→ "—"). */
   readiness: number | null;
   /** "نسبة التحقق" — number | null (→ "—"). */
   coverage: number | null;

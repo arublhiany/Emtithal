@@ -122,7 +122,7 @@ test("AI cannot inject a compliance verdict — decision recommendation is rejec
 test("an EXPLICIT readiness request runs DETERMINISTIC_VERIFICATION; its snapshot equals an independent engine run", async () => {
   // no AI capability needed — a pure deterministic readiness view
   const client = fakeClientByPurpose({});
-  const r = await runOrchestration({ textAr: "اعرض مؤشر جاهزية امتثال ونسبة التحقق والعوائق الحرجة للشركة" }, { client });
+  const r = await runOrchestration({ textAr: "اعرض مؤشر جاهزية سبّاق ونسبة التحقق والعوائق الحرجة للشركة" }, { client });
   assert.equal(r.intent, "COMBINED_ANALYSIS");
   assert.deepEqual(client.calls, []); // deterministic only — no LLM
   const run = verifyAll(getRegulatoryRequirements(), DEMO_COMPANY_PROFILE, DEMO_VERIFICATION_INPUTS);

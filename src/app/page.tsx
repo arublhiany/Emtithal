@@ -105,7 +105,7 @@ export default function LandingPage() {
       <footer className="border-t border-[var(--color-border)]">
         <div className="mx-auto flex w-full max-w-[var(--content-max)] flex-wrap items-center justify-between gap-2 px-8 py-5">
           <p className="text-[11px] leading-relaxed text-[var(--color-ink-faint)]">
-            امتثال لا يحل محل السلطة التنظيمية ولا يضمن نتائج التفتيش.
+            سبّاق لا يحل محل السلطة التنظيمية ولا يضمن نتائج التفتيش.
           </p>
           <p className="text-[11px] text-[var(--color-ink-faint)]">{LANDING_FOOTER_AR}</p>
         </div>

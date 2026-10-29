@@ -29,7 +29,7 @@ test("portfolio average KPI reads 'متوسط مؤشر الجاهزية' with no
     const src = read(p);
     assert.match(src, /label="متوسط مؤشر الجاهزية"/, p);
     assert.equal(/متوسط \$\{READINESS_INDEX_AR\}/.test(src), false, `${p} still builds the label from the glossary const`);
-    assert.equal(src.includes("متوسط مؤشر جاهزية امتثال (تجريبي)"), false, p);
+    assert.equal(src.includes("متوسط مؤشر جاهزية سبّاق (تجريبي)"), false, p);
   }
 });
 
@@ -216,7 +216,7 @@ test("no repetitive 'تجريبي' clutter in page titles / KPI labels / company
 
 test("the primary demo company name carries no '(عرض تجريبي)' prefix", () => {
   const src = read("src/lib/data/demo/companyProfile.ts");
-  assert.match(src, /legalNameAr:\s*"شركة نموذج امتثال للحج والعمرة"/);
+  assert.match(src, /legalNameAr:\s*"شركة نموذج سبّاق للحج والعمرة"/);
   assert.equal(src.includes("(عرض تجريبي)"), false);
   const gov = read("src/lib/data/demo/governmentPortfolio.ts");
   assert.equal(gov.includes("(تجريبي)"), false);

@@ -70,7 +70,7 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
           <CompareBar
             beforeValue={result.currentOverallScore}
             afterValue={result.predictedOverallScore}
-            label="مؤشر جاهزية امتثال"
+            label="مؤشر جاهزية سبّاق"
           />
           <div className="flex items-center gap-4 sm:justify-end">
             <div className="text-center">
@@ -94,7 +94,7 @@ export function DecisionResult({ result }: { result: DecisionSimulationResult })
       <Card>
         <SectionHeader
           title="المتطلبات المتأثرة"
-          subtitle="يعرض امتثال المتطلبات التي قد يتأثر وضعها بالقرار المقترح."
+          subtitle="يعرض سبّاق المتطلبات التي قد يتأثر وضعها بالقرار المقترح."
         />
         <div className="space-y-3">
           {result.affectedRequirements.map((r) => (

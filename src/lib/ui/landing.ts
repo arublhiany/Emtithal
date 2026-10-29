@@ -28,11 +28,6 @@ export const LANDING_HEADLINE_AR =
 export const LANDING_SUPPORTING_AR =
   "منصة ذكاء تنظيمي تجمع اشتراطات الجهات الحكومية ذات العلاقة بالحج والعمرة، وتربطها بأدلة وبيانات الشركات، لتكشف فجوات الامتثال، وتتوقع أثر السيناريوهات التشغيلية، وتقترح البدائل الأقل خطورة قبل اتخاذ القرار.";
 
-export const LANDING_FOOTER_AR = "امتثال © 1447هـ";
-
-/** Canonical logo asset (product-owner supplied), served from /public. */
-export const LOGO_ASSET_PATH = "/emtithal-logo.png";
-/** Natural pixel size of the supplied asset — used to lock the aspect ratio. */
-export const LOGO_INTRINSIC = { width: 1882, height: 836 } as const;
+export const LANDING_FOOTER_AR = "سبّاق © 1447هـ";
 
 export const LANGUAGE_CONTROL = { arLabel: "العربية", enLabel: "English" } as const;

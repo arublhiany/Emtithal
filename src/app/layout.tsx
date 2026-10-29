@@ -14,9 +14,9 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "امتثال | Emtithal",
+  title: "سبّاق | Sabbaq",
   description:
-    "منصة امتثال — منصة ذكاء اصطناعي للامتثال الاستباقي وذكاء القرار لشركات خدمة الحج والجهات الرقابية.",
+    "منصة سبّاق — منصة ذكاء اصطناعي للامتثال الاستباقي وذكاء القرار لشركات خدمة الحج والجهات الرقابية.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -49,7 +49,7 @@ test("no Unicode/color emoji in any src/app or src/components file", () => {
 // -- 2. canonical readiness/coverage terminology, no Official Score ---
 
 test("the approved canonical terms are the ones wired", () => {
-  assert.equal(READINESS_INDEX_AR, "مؤشر جاهزية امتثال");
+  assert.equal(READINESS_INDEX_AR, "مؤشر جاهزية سبّاق");
   assert.equal(VERIFICATION_COVERAGE_AR, "نسبة التحقق");
 });
 
