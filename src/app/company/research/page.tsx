@@ -17,7 +17,7 @@ export default function ResearchSupportPage() {
       <PageHead
         eyebrow="دعم بحثي"
         title="البحث في الأبحاث الرسمية للمعهد"
-        subtitle="ابحث في المصادر الرسمية المتاحة داخل امتثال لدعم القرار."
+        subtitle="ابحث في المصادر الرسمية المتاحة داخل سبّاق لدعم القرار."
         actions={<BoundaryChip kind="RESEARCH" />}
       />
 
