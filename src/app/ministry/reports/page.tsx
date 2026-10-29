@@ -75,7 +75,7 @@ export default function GovernmentReportsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `emtithal-readiness-${DEMO_COMPANY_PROFILE.season}.csv`;
+    a.download = `sabbaq-readiness-${DEMO_COMPANY_PROFILE.season}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     setDone("تم تنزيل ملف CSV.");
@@ -114,7 +114,7 @@ export default function GovernmentReportsPage() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Panel>
-          <p className="text-xs text-[var(--color-ink-muted)]">مؤشر جاهزية امتثال</p>
+          <p className="text-xs text-[var(--color-ink-muted)]">مؤشر جاهزية سبّاق</p>
           <p className="mt-1 text-3xl font-bold text-[var(--color-ink)] tabular-nums">
             {displayValue(report.readinessIndex)}
           </p>
