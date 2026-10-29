@@ -27,7 +27,7 @@ export function AppShell({
   const resolvedTitle =
     title ??
     navItems.find((n) => pathname === n.href || pathname?.startsWith(n.href + "/"))?.label ??
-    "امتثال";
+    "سبّاق";
 
   useEffect(() => {
     if (state.view !== null && state.view !== portal) router.replace("/");
