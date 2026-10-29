@@ -26,7 +26,7 @@ export interface ComplianceReport {
   companyNameAr: string;
   seasonAr: string;
   generatedAtIso: string;
-  /** "مؤشر جاهزية امتثال" — 0–100, or null (→ "—"). */
+  /** "مؤشر جاهزية سبّاق" — 0–100, or null (→ "—"). */
   readinessIndex: number | null;
   /** "نسبة التحقق" — 0–100, or null (→ "—"). */
   verificationCoverage: number | null;
@@ -85,7 +85,7 @@ export function toReportCsv(report: ComplianceReport): string {
   const lines: string[] = [];
   lines.push(["الشركة", report.companyNameAr].map(csvCell).join(","));
   lines.push(["الموسم", report.seasonAr].map(csvCell).join(","));
-  lines.push(["مؤشر جاهزية امتثال", displayValue(report.readinessIndex)].map(csvCell).join(","));
+  lines.push(["مؤشر جاهزية سبّاق", displayValue(report.readinessIndex)].map(csvCell).join(","));
   lines.push(["نسبة التحقق", displayValue(report.verificationCoverage)].map(csvCell).join(","));
   lines.push("");
   lines.push(
@@ -168,7 +168,7 @@ export function toReportHtml(report: ComplianceReport): string {
 <h1>تقرير جاهزية الامتثال</h1>
 <p class="muted">${esc(report.companyNameAr)} — الموسم ${esc(report.seasonAr)} — أُنشئ ${esc(report.generatedAtIso)}</p>
 <div class="kpis">
-  <div class="kpi"><b>${esc(displayValue(report.readinessIndex))}</b><span>مؤشر جاهزية امتثال</span></div>
+  <div class="kpi"><b>${esc(displayValue(report.readinessIndex))}</b><span>مؤشر جاهزية سبّاق</span></div>
   <div class="kpi"><b>${esc(displayValue(report.verificationCoverage))}</b><span>نسبة التحقق</span></div>
 </div>
 <table><thead><tr>
