@@ -10,6 +10,7 @@ export const COMPANY_NAV: NavItem[] = [
   { href: "/company/evidence", label: "الأدلة", icon: "evidence" },
   { href: "/company/gaps", label: "الفجوات والمخاطر", icon: "risks" },
   { href: "/company/improvement-plan", label: "خطة التحسين", icon: "plan" },
+  { href: "/company/digital-twin", label: "توأم المخيم", icon: "companies" },
   { href: "/company/decision-simulation", label: "محاكاة القرار", icon: "decision" },
   { href: "/company/research", label: "دعم بحثي", icon: "research" },
   { href: "/company/alerts", label: "التنبيهات", icon: "alerts" },
