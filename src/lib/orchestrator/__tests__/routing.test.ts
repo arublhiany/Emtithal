@@ -62,7 +62,7 @@ test("regulatory explanation/applicability query → NO DETERMINISTIC_VERIFICATI
 });
 
 test("pure readiness / verification query → DETERMINISTIC_VERIFICATION ONLY (no separate applicability capability)", () => {
-  const r = classifyIntent("اعرض مؤشر جاهزية امتثال ونسبة التحقق والعوائق الحرجة");
+  const r = classifyIntent("اعرض مؤشر جاهزية سبّاق ونسبة التحقق والعوائق الحرجة");
   assert.equal(r.intent, "COMBINED_ANALYSIS");
   // verifyAll(...) runs the canonical applicability logic internally — no
   // duplicate DETERMINISTIC_APPLICABILITY capability just for bookkeeping.
