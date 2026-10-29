@@ -46,7 +46,7 @@ export function getCompanyProfile(): CompanyProfile {
   return {
     id: DEMO_COMPANY_ID,
     nameAr: c.legalNameAr,
-    nameEn: "Emtithal Model Hajj Services (Demo)", // display-only label
+    nameEn: "Sabbaq Model Hajj Services (Demo)", // display-only label
     license: "رخصة تشغيل رقم 4471-H", // display-only fictional label
     city: c.locationsAr[0] ?? "—",
     ...raw,
