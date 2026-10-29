@@ -1,31 +1,27 @@
-import Image from "next/image";
-import { LOGO_ASSET_PATH, LOGO_INTRINSIC } from "@/lib/ui/landing";
+import { BRAND_NAME_AR, BRAND_NAME_EN } from "@/lib/ui/brand";
 
-/**
- * The canonical Emtithal logo — the exact product-owner-supplied asset in
- * `/public`. Never redrawn, recreated with text, recolored, distorted, or
- * cropped. Aspect ratio is locked to the asset's intrinsic size; only the
- * rendered height varies.
- */
+/** Text wordmark uses the application's Arabic font and current product name. */
 export function Logo({
   height = 36,
   className = "",
-  priority = false,
 }: {
   height?: number;
   className?: string;
   priority?: boolean;
 }) {
-  const width = Math.round((height * LOGO_INTRINSIC.width) / LOGO_INTRINSIC.height);
   return (
-    <Image
-      src={LOGO_ASSET_PATH}
-      alt="امتثال Emtithal"
-      width={width}
-      height={height}
-      priority={priority}
-      className={className}
-      style={{ height, width: "auto" }}
-    />
+    <span
+      role="img"
+      aria-label={`${BRAND_NAME_AR} ${BRAND_NAME_EN}`}
+      className={`inline-flex shrink-0 flex-col items-center justify-center text-[var(--color-primary)] ${className}`}
+      style={{ height, lineHeight: 1 }}
+    >
+      <span aria-hidden="true" className="font-extrabold" style={{ fontSize: height * 0.82 }}>
+        {BRAND_NAME_AR}
+      </span>
+      <span aria-hidden="true" className="font-medium tracking-wide" style={{ fontSize: height * 0.23 }}>
+        {BRAND_NAME_EN}
+      </span>
+    </span>
   );
 }
