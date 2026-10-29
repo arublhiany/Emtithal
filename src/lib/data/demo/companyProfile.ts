@@ -18,7 +18,7 @@ export const CANONICAL_DEMO_COMPANY_ID = "demo-company-01";
 /** Raw declared draft — the shape an onboarding flow would submit. */
 export const DEMO_COMPANY_PROFILE_DRAFT: CompanyProfileDraft = {
   companyId: CANONICAL_DEMO_COMPANY_ID,
-  legalNameAr: "شركة نموذج امتثال للحج والعمرة",
+  legalNameAr: "شركة نموذج سبّاق للحج والعمرة",
   season: "1447H",
 
   pilgrims: {
@@ -93,7 +93,7 @@ export const DEMO_COMPANY_PROFILE_DRAFT: CompanyProfileDraft = {
       kind: "EVIDENCE",
       labelAr: "الأدلة",
       state: "IMPORTED",
-      sourceAr: "ملفات مرفوعة داخل امتثال — بيانات عرض",
+      sourceAr: "ملفات مرفوعة داخل سبّاق — بيانات عرض",
       lastUpdatedAr: "قبل يوم",
       verification: "PENDING_VERIFICATION",
       origin: DATA_SOURCE.DEMO_DATA,
